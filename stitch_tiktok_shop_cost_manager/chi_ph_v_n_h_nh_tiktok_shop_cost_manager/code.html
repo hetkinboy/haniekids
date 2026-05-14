@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chi phí vận hành - TikTok Shop Cost Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#00504c",
+                        "primary": "#006a65",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#001d32",
+                        "on-surface": "#191c1e",
+                        "on-tertiary-container": "#662200",
+                        "on-secondary-fixed-variant": "#004a75",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#bbc9c7",
+                        "on-tertiary-fixed-variant": "#7b2f08",
+                        "surface-bright": "#f7f9fc",
+                        "tertiary-fixed-dim": "#ffb598",
+                        "error": "#ba1a1a",
+                        "tertiary": "#9a451f",
+                        "surface-container-high": "#e6e8eb",
+                        "secondary-fixed": "#cde5ff",
+                        "surface-container": "#eceef1",
+                        "tertiary-fixed": "#ffdbce",
+                        "on-primary-fixed": "#00201e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#00403d",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#3c4948",
+                        "surface": "#f7f9fc",
+                        "primary-container": "#00b5ad",
+                        "surface-dim": "#d8dadd",
+                        "secondary-fixed-dim": "#95ccff",
+                        "on-background": "#191c1e",
+                        "tertiary-container": "#ee865a",
+                        "primary-fixed": "#6ff7ee",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#6c7a78",
+                        "surface-variant": "#e0e3e6",
+                        "inverse-on-surface": "#eff1f4",
+                        "primary-fixed-dim": "#4edbd2",
+                        "on-secondary-container": "#003f63",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#006a65",
+                        "inverse-primary": "#4edbd2",
+                        "surface-container-low": "#f2f4f7",
+                        "error-container": "#ffdad6",
+                        "background": "#f7f9fc",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-tertiary-fixed": "#370e00",
+                        "secondary": "#006399",
+                        "secondary-container": "#35adff",
+                        "inverse-surface": "#2d3133"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "card_gap": "24px",
+                        "header_height": "64px",
+                        "sidebar_width": "256px",
+                        "container_padding": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "currency-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "title-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-bold": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "currency-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "title-sm": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                        "display-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                        "label-bold": ["12px", {"lineHeight": "18px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            background-color: #f7f9fc;
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-active-indicator {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #006a65;
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-50 flex justify-between items-center h-header_height px-container_padding w-full border-b border-outline-variant/30 bg-surface shadow-sm">
+<div class="flex items-center gap-8">
+<span class="text-headline-md font-headline-md font-bold text-primary">TikTok Shop Cost Manager</span>
+<nav class="hidden md:flex gap-6 items-center h-full">
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Dashboard</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Báo cáo</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Đối soát</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="Shop Owner Avatar" data-alt="A clean, professional close-up of a modern store logo or a stylized merchant avatar. The visual style is minimalist and corporate, using the primary teal and soft grey tones from the design system. The lighting is bright and high-key, suggesting a trustworthy and organized business environment. The image is crisp with a subtle depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARlbKF1rjSBJ1ydKDf5AkzOMnK_nyfsb6S_45LBi3u22kQE2AZ8Z68qDsE6Uh0NWmXHSCPZNBiTeNQGVhM_-jEV7GfymkscmRLA9XPAG7qY_opsyd6_2_piApxcuIbHogpuW4yDhodqMNxDgBvfTSj7meHwH3gGEbZcOwIEOzTDFoiB3B-g55MHncL5ICelZHe06RefuIb3p2JNvj-LrWPoBRLnKM_J8rs7dd1aX6OG1Rg-a2TrJVgKj_dfX4oZDFSilXv_L6kIbA"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar_width z-40 flex flex-col pt-header_height bg-surface-container-lowest border-r border-outline-variant/30 shadow-sm hidden md:flex">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" data-icon="store">store</span>
+</div>
+<div>
+<h3 class="font-label-bold text-label-bold text-on-surface">TikTok Cost Manager</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Small Shop Owner</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span> Sản phẩm kho
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="input">input</span> Nhập hàng
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span> Sản phẩm TikTok
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span> Đơn hàng TikTok
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span> Đối soát tiền
+                </a>
+<a class="relative flex items-center gap-3 bg-primary-container/10 text-primary border-r-4 border-primary py-3 px-4 transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span> Chi phí vận hành
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span> Báo cáo
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span> Cấu hình phí
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span> Người dùng
+                </a>
+</nav>
+</div>
+<div class="mt-auto p-6 border-t border-outline-variant/20">
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span> Hướng dẫn
+            </a>
+<a class="flex items-center gap-3 text-error py-3 px-4 hover:bg-error-container/20 transition-colors font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span> Đăng xuất
+            </a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:ml-sidebar_width min-h-screen p-container_padding">
+<!-- Dashboard Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface mb-1">Chi phí vận hành</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Quản lý và theo dõi các khoản chi ngoài sàn TikTok</p>
+</div>
+<button class="bg-primary text-on-secondary px-6 py-2.5 rounded-lg font-label-bold text-label-bold flex items-center gap-2 shadow-sm hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Thêm chi phí
+            </button>
+</div>
+<!-- Statistics Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-card_gap mb-8">
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] border border-outline-variant/20">
+<p class="text-on-surface-variant font-label-bold text-label-bold mb-2 uppercase tracking-wider">Tổng chi tháng này</p>
+<p class="text-primary font-currency-lg text-currency-lg mb-2">45.200.000 ₫</p>
+<div class="flex items-center gap-1 text-[#2e7d32] font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+<span>+12% so với tháng trước</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] border border-outline-variant/20">
+<p class="text-on-surface-variant font-label-bold text-label-bold mb-2 uppercase tracking-wider">Chi phí Ads</p>
+<p class="text-on-surface font-currency-lg text-currency-lg mb-2">28.500.000 ₫</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">63% tổng ngân sách</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] border border-outline-variant/20">
+<p class="text-on-surface-variant font-label-bold text-label-bold mb-2 uppercase tracking-wider">Chi phí Nhân sự</p>
+<p class="text-on-surface font-currency-lg text-currency-lg mb-2">12.000.000 ₫</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Định biên 3 nhân sự</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] border border-outline-variant/20">
+<p class="text-on-surface-variant font-label-bold text-label-bold mb-2 uppercase tracking-wider">KOL/KOC Booking</p>
+<p class="text-on-surface font-currency-lg text-currency-lg mb-2">4.700.000 ₫</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">05 chiến dịch đang chạy</p>
+</div>
+</div>
+<!-- Data Table Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] border border-outline-variant/20 overflow-hidden">
+<div class="p-6 border-b border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md font-body-md" placeholder="Tìm kiếm ghi chú, loại chi phí..." type="text"/>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors text-body-md font-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+                        Lọc
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors text-body-md font-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+                        Xuất file
+                    </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low sticky top-0">
+<tr>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Ngày</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Loại chi phí</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-right">Số tiền</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Ghi chú</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Người tạo</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-center">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-body-md text-body-md">24/10/2023</td>
+<td class="px-6 py-4">
+<span class="bg-primary-container/20 text-primary-fixed-variant px-3 py-1 rounded-full text-label-bold font-label-bold">Ads</span>
+</td>
+<td class="px-6 py-4 font-label-bold text-label-bold text-right text-primary">5.000.000 ₫</td>
+<td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Chạy quảng cáo livestream Flash Sale</td>
+<td class="px-6 py-4 font-body-md text-body-md">Nguyễn Văn A</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-body-md text-body-md">23/10/2023</td>
+<td class="px-6 py-4">
+<span class="bg-secondary-container/20 text-on-secondary-container px-3 py-1 rounded-full text-label-bold font-label-bold">Bao bì</span>
+</td>
+<td class="px-6 py-4 font-label-bold text-label-bold text-right text-primary">1.200.000 ₫</td>
+<td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Mua 1000 túi chống sốc &amp; băng keo</td>
+<td class="px-6 py-4 font-body-md text-body-md">Trần Thị B</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-body-md text-body-md">22/10/2023</td>
+<td class="px-6 py-4">
+<span class="bg-tertiary-container/20 text-on-tertiary-container px-3 py-1 rounded-full text-label-bold font-label-bold">Nhân sự</span>
+</td>
+<td class="px-6 py-4 font-label-bold text-label-bold text-right text-primary">8.000.000 ₫</td>
+<td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Lương nhân viên đóng gói tháng 10</td>
+<td class="px-6 py-4 font-body-md text-body-md">Nguyễn Văn A</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-body-md text-body-md">20/10/2023</td>
+<td class="px-6 py-4">
+<span class="bg-error-container/20 text-on-error-container px-3 py-1 rounded-full text-label-bold font-label-bold">KOL</span>
+</td>
+<td class="px-6 py-4 font-label-bold text-label-bold text-right text-primary">2.500.000 ₫</td>
+<td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Booking Video Review - Mẫu X</td>
+<td class="px-6 py-4 font-body-md text-body-md">Lê Văn C</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-body-md text-body-md">18/10/2023</td>
+<td class="px-6 py-4">
+<span class="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-full text-label-bold font-label-bold">Khác</span>
+</td>
+<td class="px-6 py-4 font-label-bold text-label-bold text-right text-primary">450.000 ₫</td>
+<td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Tiền điện nước kho tháng 10</td>
+<td class="px-6 py-4 font-body-md text-body-md">Nguyễn Văn A</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
+<p class="font-body-sm text-body-sm text-on-surface-variant">Hiển thị 5 trong số 120 bản ghi</p>
+<div class="flex items-center gap-2">
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-low disabled:opacity-50 transition-colors" disabled="">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-10 h-10 bg-primary text-on-secondary rounded-lg font-label-bold text-label-bold">1</button>
+<button class="w-10 h-10 hover:bg-surface-container-low rounded-lg font-label-bold text-label-bold text-on-surface-variant">2</button>
+<button class="w-10 h-10 hover:bg-surface-container-low rounded-lg font-label-bold text-label-bold text-on-surface-variant">3</button>
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Drawer Overlay (Hidden by default, used for visualization) -->
+<div class="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm flex justify-end">
+<!-- Drawer Form Content -->
+<div class="w-full max-w-md bg-surface h-full shadow-2xl flex flex-col animate-slide-left border-l border-outline-variant/30">
+<div class="p-6 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
+<div>
+<h2 class="font-title-sm text-title-sm text-on-surface">Thêm chi phí vận hành</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Nhập thông tin chi phí mới vào hệ thống</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Date Input -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">Ngày phát sinh</label>
+<div class="relative">
+<input class="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md font-body-md" type="date" value="2023-10-24"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" data-icon="calendar_today">calendar_today</span>
+</div>
+</div>
+<!-- Type Selection -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">Loại chi phí</label>
+<select class="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md font-body-md appearance-none cursor-pointer">
+<option value="">Chọn loại chi phí</option>
+<option value="ads">Ads (Quảng cáo)</option>
+<option value="package">Bao bì &amp; Đóng gói</option>
+<option value="staff">Nhân sự</option>
+<option value="kol">KOL / KOC</option>
+<option value="other">Khác</option>
+</select>
+</div>
+<!-- Amount Input -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">Số tiền (VND)</label>
+<div class="relative">
+<input class="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md font-body-md font-bold text-primary" placeholder="0" type="number"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 font-label-bold text-label-bold text-on-surface-variant">₫</span>
+</div>
+</div>
+<!-- Note Textarea -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">Ghi chú</label>
+<textarea class="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-body-md font-body-md resize-none" placeholder="Nhập chi tiết về khoản chi này..." rows="4"></textarea>
+</div>
+<!-- Visual Accent: Illustration Placeholder -->
+<div class="pt-4 opacity-60">
+<div class="w-full h-32 rounded-xl bg-surface-container border border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
+<img alt="Accounting Visualization" data-alt="A clean, minimalist 3D isometric illustration of a calculator, a small stack of coins, and digital charts representing business expenses. The colors are predominantly teal and soft blue against a white background. The style is professional, modern, and high-quality, fitting for a financial software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYepoJRy6bu9DgQKCa7ITL4yaqSpdQIopXmMDilAJ1zPNCo6dXhqr7GUqSNrIHlJ6sZ9iTYG0-vl2DmT9QKSOzIvrebVfhEQclOHvdMVjHw0Sxa6jVCH9c6Be4O-QTQVGq50pG4BdywOucdmnFs87ZMbNjf2R6F58-Wv-a5bcmtu4mDhzZmmMyU9JuK1Fce2RIwD3ar_qCa-f7ylYDmQOzxpqCPwvvJ-70vc2Itnlm10a7Aapv-jJzBmDIAAi2xgm2qRTiIG46wuQ"/>
+</div>
+</div>
+</div>
+<div class="p-6 border-t border-outline-variant/20 bg-surface-container-lowest grid grid-cols-2 gap-4">
+<button class="px-6 py-3 border border-outline-variant rounded-lg font-label-bold text-label-bold text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                    Hủy bỏ
+                </button>
+<button class="px-6 py-3 bg-primary text-on-secondary rounded-lg font-label-bold text-label-bold shadow-md hover:opacity-90 transition-opacity">
+                    Lưu thông tin
+                </button>
+</div>
+</div>
+</div>
+</body></html>

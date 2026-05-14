@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quản lý Sản phẩm TikTok - TikTok Shop Cost Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#00504c",
+                    "primary": "#006a65",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed": "#001d32",
+                    "on-surface": "#191c1e",
+                    "on-tertiary-container": "#662200",
+                    "on-secondary-fixed-variant": "#004a75",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#bbc9c7",
+                    "on-tertiary-fixed-variant": "#7b2f08",
+                    "surface-bright": "#f7f9fc",
+                    "tertiary-fixed-dim": "#ffb598",
+                    "error": "#ba1a1a",
+                    "tertiary": "#9a451f",
+                    "surface-container-high": "#e6e8eb",
+                    "secondary-fixed": "#cde5ff",
+                    "surface-container": "#eceef1",
+                    "tertiary-fixed": "#ffdbce",
+                    "on-primary-fixed": "#00201e",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#00403d",
+                    "on-primary": "#ffffff",
+                    "on-surface-variant": "#3c4948",
+                    "surface": "#f7f9fc",
+                    "primary-container": "#00b5ad",
+                    "surface-dim": "#d8dadd",
+                    "secondary-fixed-dim": "#95ccff",
+                    "on-background": "#191c1e",
+                    "tertiary-container": "#ee865a",
+                    "primary-fixed": "#6ff7ee",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#6c7a78",
+                    "surface-variant": "#e0e3e6",
+                    "inverse-on-surface": "#eff1f4",
+                    "primary-fixed-dim": "#4edbd2",
+                    "on-secondary-container": "#003f63",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#006a65",
+                    "inverse-primary": "#4edbd2",
+                    "surface-container-low": "#f2f4f7",
+                    "error-container": "#ffdad6",
+                    "background": "#f7f9fc",
+                    "surface-container-highest": "#e0e3e6",
+                    "on-tertiary-fixed": "#370e00",
+                    "secondary": "#006399",
+                    "secondary-container": "#35adff",
+                    "inverse-surface": "#2d3133"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "card_gap": "24px",
+                    "header_height": "64px",
+                    "sidebar_width": "256px",
+                    "container_padding": "24px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "currency-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "title-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-bold": ["Inter"]
+            },
+            "fontSize": {
+                    "body-sm": ["12px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "currency-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "title-sm": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                    "display-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "label-bold": ["12px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F0F2F5; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .table-zebra tr:nth-child(even) { background-color: #FAFAFA; }
+    </style>
+</head>
+<body class="bg-background text-on-background">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full w-sidebar_width z-40 flex flex-col pt-header_height bg-surface-container-lowest border-r border-outline-variant/30 shadow-sm">
+<div class="px-6 py-4 mb-4">
+<h1 class="font-headline-md text-headline-md text-primary font-bold">TikTok Manager</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Small Shop Owner</p>
+</div>
+<nav class="flex-1 overflow-y-auto px-2">
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-bold text-label-bold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-bold text-label-bold">Sản phẩm kho</span>
+</a>
+<a class="flex items-center gap-3 bg-primary-container/10 text-primary border-r-4 border-primary py-3 px-4 scale-98 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-bold text-label-bold">Sản phẩm TikTok</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-bold text-label-bold">Đơn hàng TikTok</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-bold text-label-bold">Đối soát tiền</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-label-bold text-label-bold">Báo cáo</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant/20 p-2">
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-bold text-label-bold">Hướng dẫn</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-3 px-4 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-bold text-label-bold">Đăng xuất</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar Shell -->
+<header class="sticky top-0 z-50 flex justify-between items-center h-header_height px-container_padding w-full bg-surface shadow-sm border-b border-outline-variant/30 ml-0 md:pl-[256px]">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg pl-10 pr-4 py-2 text-body-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Tìm kiếm SKU hoặc tên sản phẩm..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="bg-primary text-on-primary font-label-bold text-label-bold px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Thêm sản phẩm TikTok
+            </button>
+<div class="flex items-center gap-3 border-l border-outline-variant/30 pl-6">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="settings">settings</span>
+<img alt="Shop Owner Avatar" class="w-8 h-8 rounded-full border border-outline-variant/30" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBgUowM7i8x0XP-go2f2YxSqnCrz8IcADWaHJBVJt-O7iZicE5Db2kRE8fiKQqSzEENWlz472VTraYQ-QNgWW6FORi2VFIc45wgKvhvIqBAQMYU5JY92knMy0hAy4iANF1klVjMkdkrkyAS3-YhywAhXpLetbkcZYpHLhy3SHAw8vfMf4LdXwoBeQAi5eho8QgnomJ_kvBTLtudWz7uJY35zSMOmHORvfJhZ1HBh9ta_KVc9BOGQvBga_ZYrkSX3_id24Ok-qINkc"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-0 md:ml-[256px] p-container_padding min-h-screen">
+<div class="max-w-[1400px] mx-auto space-y-card_gap">
+<!-- Breadcrumbs & Title -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span>Sản phẩm</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary font-bold">Sản phẩm TikTok</span>
+</div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Quản lý Sản phẩm TikTok Shop</h2>
+</div>
+<!-- Bento Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] flex flex-col">
+<span class="font-label-bold text-label-bold text-on-surface-variant mb-1">Tổng sản phẩm</span>
+<span class="font-currency-lg text-currency-lg text-on-surface">1,248</span>
+<div class="mt-4 flex items-center gap-1 text-[#22C55E]">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span class="font-body-sm text-body-sm">+12% so với tháng trước</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] flex flex-col">
+<span class="font-label-bold text-label-bold text-on-surface-variant mb-1">Đang hoạt động</span>
+<span class="font-currency-lg text-currency-lg text-on-surface">1,120</span>
+<div class="mt-4 flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+<span class="font-body-sm text-body-sm">Tỉ lệ 90% khả dụng</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] flex flex-col border-l-4 border-primary">
+<span class="font-label-bold text-label-bold text-on-surface-variant mb-1">Doanh thu dự kiến</span>
+<span class="font-currency-lg text-currency-lg text-primary">850.400.000 ₫</span>
+<div class="mt-4 flex items-center gap-1 text-[#22C55E]">
+<span class="material-symbols-outlined text-sm" data-icon="keyboard_double_arrow_up">keyboard_double_arrow_up</span>
+<span class="font-body-sm text-body-sm">Vượt mục tiêu 5%</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] flex flex-col border-l-4 border-tertiary">
+<span class="font-label-bold text-label-bold text-on-surface-variant mb-1">Lợi nhuận gộp trung bình</span>
+<span class="font-currency-lg text-currency-lg text-tertiary">125.000.000 ₫</span>
+<div class="mt-4 flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="monitoring">monitoring</span>
+<span class="font-body-sm text-body-sm">Margin 14.7%</span>
+</div>
+</div>
+</div>
+<!-- Product Table Section -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.06)] overflow-hidden border border-outline-variant/20">
+<div class="p-4 flex justify-between items-center bg-surface-container-low border-b border-outline-variant/30">
+<div class="flex gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface rounded border border-outline-variant/50 text-body-sm cursor-pointer hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                            Bộ lọc
+                        </div>
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface rounded border border-outline-variant/50 text-body-sm cursor-pointer hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="sort">sort</span>
+                            Sắp xếp: Mới nhất
+                        </div>
+</div>
+<div class="text-body-sm text-on-surface-variant">Hiển thị 1 - 10 trên 1,248 sản phẩm</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left table-zebra">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-bold text-label-bold border-b border-outline-variant/30">
+<th class="px-6 py-4">SKU TIKTOK</th>
+<th class="px-6 py-4">TÊN SẢN PHẨM</th>
+<th class="px-6 py-4">BIẾN THỂ</th>
+<th class="px-6 py-4 text-right">GIÁ BÁN</th>
+<th class="px-6 py-4 text-right">GIÁ VỐN DỰ KIẾN</th>
+<th class="px-6 py-4 text-right">LỢI NHUẬN</th>
+<th class="px-6 py-4">TRẠNG THÁI</th>
+<th class="px-6 py-4 text-center">THAO TÁC</th>
+</tr>
+</thead>
+<tbody class="text-body-md">
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container-high/30 transition-colors">
+<td class="px-6 py-4 font-label-bold text-primary">TS-SHOE-001</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Product thumbnail" class="w-10 h-10 rounded border border-outline-variant/30" data-alt="A professional studio product shot of a sleek white running sneaker with minimalist design elements, set against a clean, light-mode background with soft neutral shadows and corporate teal accents. High-quality commercial photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB15UITff4kxEhIFxP4R9HIl5kaBb03rQPbMDDoRf_hc_nhW3sF_LPYeuOpjFhbeH48GTVanUoQceDrBWfWXMkBHNWrQzIG_5hoLt_-v-nYET8U7P_tZoCO6nBiMuQGNEs2TIb2Cm0jp-JmQHXtcKyk7SejBHi1mHFmHt1iHyqlrnoCnws6mzs5voUXRCjwqlLXoeyVQvL399YsfCxyvjdkbngmgsUR-FnS24xItcrmTRv5YkWn_bi7EoObd4trhrJlpaCpWAKgnyU"/>
+<div class="flex flex-col">
+<span class="font-bold">Giày Chạy Bộ Nam Pro V1</span>
+<span class="text-xs text-on-surface-variant">Thời trang nam &gt; Giày</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">Trắng, 42</td>
+<td class="px-6 py-4 text-right font-bold">450.000 ₫</td>
+<td class="px-6 py-4 text-right">310.000 ₫</td>
+<td class="px-6 py-4 text-right font-bold text-[#22C55E]">+140.000 ₫</td>
+<td class="px-6 py-4">
+<span class="bg-[#ECFDF5] text-[#10B981] px-2.5 py-0.5 rounded-full text-xs font-bold border border-[#10B981]/20">Đang bán</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-sm" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container-high/30 transition-colors">
+<td class="px-6 py-4 font-label-bold text-primary">TS-SHOE-002</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Product thumbnail" class="w-10 h-10 rounded border border-outline-variant/30" data-alt="A detailed commercial shot of a matte black waterproof commuter backpack with multiple zipper compartments, presented in a minimalist studio environment with soft directional lighting. The aesthetic is clean and modern, highlighting the fabric texture and professional build quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz5a0oWXk1nOW3ivPNBWYjvhSIXUfvZLu3xM8VmelHZUokGCbxy2yYxyTduCVvaRDnuqehj2l3Ejl794tOogpEMuYiQKUNdhQMHttaq-cwMgEJ9cxIN0hBrpPP8IgGxoTSd8xupQ7i7he9ORMyJgtkUBGZg-FU3XXFT7m7W3xacFZcvA2t3WUFbq0DvqzuOofBA7V-MOdJy836pM6d4UZQKoZm5lIsMcrzpw32taZb8ouo_ScpCehIJgABPuRsiIcJYzQ-qf_jZlw"/>
+<div class="flex flex-col">
+<span class="font-bold">Balo Chống Nước TechPack</span>
+<span class="text-xs text-on-surface-variant">Phụ kiện &gt; Túi xách</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">Đen, Standard</td>
+<td class="px-6 py-4 text-right font-bold">890.000 ₫</td>
+<td class="px-6 py-4 text-right">720.000 ₫</td>
+<td class="px-6 py-4 text-right font-bold text-[#22C55E]">+170.000 ₫</td>
+<td class="px-6 py-4">
+<span class="bg-[#ECFDF5] text-[#10B981] px-2.5 py-0.5 rounded-full text-xs font-bold border border-[#10B981]/20">Đang bán</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-sm" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container-high/30 transition-colors">
+<td class="px-6 py-4 font-label-bold text-primary">TS-ELEC-881</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Product thumbnail" class="w-10 h-10 rounded border border-outline-variant/30" data-alt="High-end wireless noise-canceling headphones in charcoal gray, captured in a bright, modern studio setting. The lighting is soft and diffused to emphasize the sleek curves and metallic accents of the product. The overall mood is sophisticated and premium, aligned with a corporate financial application aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA4y0XhSdQ0Rg8hpTXfycOYTu3UJaoy-qV2R8lRpF6Cg7P7iaroxZeUKvDS-ameTjUdzPytsaTQQkybl1POnY8ktwaPt69zfIfgrcOBZHRgwWhgnfe9-kfWkIA2sqwSlGL4gvJlIhaP4YQL5HctI52N5tT9L__Bgdd93UfJSacgt0UBIzBCMLZmvneS96Wy9kbwehLRRzPpaDDEwKU8KVsFsUbN4Y6VfzmsiqOiO3yhQCD88RJM09-A3MEEJt2xG-hutofNdjkAfE"/>
+<div class="flex flex-col">
+<span class="font-bold">Tai Nghe Không Dây Pro Max</span>
+<span class="text-xs text-on-surface-variant">Điện tử &gt; Tai nghe</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">Xám Không Gian</td>
+<td class="px-6 py-4 text-right font-bold">2.150.000 ₫</td>
+<td class="px-6 py-4 text-right">2.200.000 ₫</td>
+<td class="px-6 py-4 text-right font-bold text-error">-50.000 ₫</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF2F2] text-[#EF4444] px-2.5 py-0.5 rounded-full text-xs font-bold border border-[#EF4444]/20">Hết hàng</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-sm" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container-high/30 transition-colors">
+<td class="px-6 py-4 font-label-bold text-primary">TS-CLO-012</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Product thumbnail" class="w-10 h-10 rounded border border-outline-variant/30" data-alt="A crisp, folded organic cotton t-shirt in a soft sage green color, presented on a white marble surface in a bright, airy studio environment. The image emphasizes the quality of the fabric and the clean, sustainable brand identity. Soft ambient light creates a professional and trustworthy visual feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDlFqeO6sgHOYa8QTu8nOW6T0Nxksjn1V-MZGckxZ7qYY2sLD37AK-6KbSgWVzp_EJaY4BrfToOWnAl53Vj_-v2JIhJaHiZbCiqnd0x3Ds4ZqKw6DN2JiiQBNNpgDTj1ruCfUSoGIKjheFHQfwf87slSoQc2Fmo_BLySJuTksejGDsPk-tgH82LXC-eqylaeaWT1p33bhtz8Cbq2RC5O2YuOHfAO4junPOZntv1W-sWWkoTb9Nr24f86IMkAdinEngoDLT8MDqHwk"/>
+<div class="flex flex-col">
+<span class="font-bold">Áo Thun Cotton Organic</span>
+<span class="text-xs text-on-surface-variant">Thời trang &gt; Áo</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">Xanh Bơ, L</td>
+<td class="px-6 py-4 text-right font-bold">220.000 ₫</td>
+<td class="px-6 py-4 text-right">150.000 ₫</td>
+<td class="px-6 py-4 text-right font-bold text-[#22C55E]">+70.000 ₫</td>
+<td class="px-6 py-4">
+<span class="bg-[#FFFBEB] text-[#D97706] px-2.5 py-0.5 rounded-full text-xs font-bold border border-[#D97706]/20">Chờ duyệt</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-sm" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 flex items-center justify-between border-t border-outline-variant/30 bg-surface-container-low">
+<div class="text-body-sm text-on-surface-variant">Hiển thị tối đa 10 dòng</div>
+<div class="flex gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/50 hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-primary bg-primary text-on-primary font-bold">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/50 hover:bg-surface transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/50 hover:bg-surface transition-colors">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/50 hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Info -->
+<div class="flex justify-between items-start pt-4 border-t border-outline-variant/30 opacity-60">
+<div class="text-body-sm">
+                    © 2024 TikTok Shop Cost Manager - Phiên bản dành cho người bán hàng Việt Nam.
+                </div>
+<div class="flex gap-4 text-body-sm font-label-bold">
+<a class="hover:text-primary" href="#">Chính sách bảo mật</a>
+<a class="hover:text-primary" href="#">Điều khoản sử dụng</a>
+<a class="hover:text-primary" href="#">Hỗ trợ trực tuyến</a>
+</div>
+</div>
+</div>
+</main>
+</body></html>
