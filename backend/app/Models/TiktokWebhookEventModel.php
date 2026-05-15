@@ -11,6 +11,7 @@ class TiktokWebhookEventModel extends Model
     protected $returnType = 'array';
     protected $allowedFields = [
         'connection_id',
+        'shop_id',
         'event_type',
         'order_id',
         'order_status',

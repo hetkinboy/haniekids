@@ -1,0 +1,281 @@
+
+    <section class="app-shell space-y-5">
+      <div class="page-header">
+        <div>
+          <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Đơn hàng TikTok</h1>
+          <p class="m-0 mt-1 text-sm text-slate-500">Đọc chi tiết đơn từ TikTok, lưu thông tin khách, đơn hàng và đối chiếu SKU kho.</p>
+        </div>
+        <button nz-button (click)="load()">
+          <span nz-icon nzType="reload"></span>
+          Tải lại
+        </button>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Tổng đơn</div>
+          <div class="metric-value">{{ total() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Doanh thu đang lọc</div>
+          <div class="metric-value text-[#006a65]">{{ filteredRevenue() | number: '1.0-0' }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Lợi nhuận đang lọc</div>
+          <div class="metric-value" [class.text-red-700]="filteredProfit() < 0" [class.text-emerald-700]="filteredProfit() >= 0">
+            {{ filteredProfit() | number: '1.0-0' }}
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Chưa khớp SKU</div>
+          <div class="metric-value text-orange-700">{{ unmatchedOrders() }}</div>
+        </div>
+      </div>
+
+      @if (auth.isAdmin()) {
+        <div class="surface p-4">
+          <form class="filter-bar" [formGroup]="importForm" (ngSubmit)="importOrder()">
+            <input nz-input class="!w-80" formControlName="order_id" placeholder="Nhập TikTok order_id, ví dụ 584027517678749225" />
+            <button nz-button nzType="primary" type="submit" [nzLoading]="importing()">
+              <span nz-icon nzType="cloud-download"></span>
+              Kéo đơn từ TikTok
+            </button>
+          </form>
+        </div>
+      }
+
+      <div class="surface p-4">
+        <form class="filter-bar" [formGroup]="filters" (ngSubmit)="page.set(1); load()">
+          <input nz-input class="!w-80" formControlName="keyword" placeholder="Tìm mã đơn, khách, SĐT" />
+          <nz-select class="!w-48" formControlName="status" nzAllowClear nzPlaceHolder="Trạng thái">
+            <nz-option nzValue="pending" nzLabel="Pending" />
+            <nz-option nzValue="confirmed" nzLabel="Confirmed" />
+            <nz-option nzValue="shipped" nzLabel="Shipped" />
+            <nz-option nzValue="completed" nzLabel="Completed" />
+            <nz-option nzValue="cancelled" nzLabel="Cancelled" />
+            <nz-option nzValue="returned" nzLabel="Returned" />
+          </nz-select>
+          <nz-select class="!w-44" formControlName="date_preset" (ngModelChange)="onDatePresetChange($event)">
+            @for (option of dateRangeOptions; track option.value) {
+              <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+            }
+          </nz-select>
+          <input nz-input type="date" class="!w-44" formControlName="date_from" title="Từ ngày" />
+          <input nz-input type="date" class="!w-44" formControlName="date_to" title="Đến ngày" />
+          <button nz-button type="submit">
+            <span nz-icon nzType="search"></span>
+            Lọc
+          </button>
+        </form>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(420px,0.65fr)]">
+        <div class="surface">
+          <nz-table
+            [nzData]="orders()"
+            [nzLoading]="loading()"
+            [nzFrontPagination]="false"
+            [nzTotal]="total()"
+            [nzPageIndex]="page()"
+            [nzPageSize]="pageSize()"
+            [nzScroll]="{ x: '1100px' }"
+            (nzPageIndexChange)="page.set($event); load()"
+            (nzPageSizeChange)="pageSize.set($event); load()"
+          >
+            <thead>
+              <tr>
+                <th nzWidth="180px">Mã đơn TikTok</th>
+                <th>Khách hàng</th>
+                <th>Ngày đặt</th>
+                <th>Tiền đơn</th>
+                <th nzWidth="100px">Lợi nhuận</th>
+                <th nzWidth="100px">Trạng thái</th>
+                <th nzWidth="110px">Chi tiết</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of orders(); track order.id) {
+                <tr [class.bg-teal-50]="selectedOrder()?.id === order.id">
+                  <td>
+                    <div class="font-semibold text-slate-950">{{ order.tiktok_order_id || order.order_code }}</div>
+                    <div class="text-xs text-slate-500">{{ order.tiktok_status || '-' }}</div>
+                  </td>
+                  <td>
+                    <div class="font-medium text-slate-950">{{ order.customer_name || '-' }}</div>
+                    <div class="text-xs text-slate-500">{{ order.customer_phone || '' }}</div>
+                  </td>
+                  <td>{{ order.order_date }}</td>
+                  <td>
+                    <div class="font-semibold">{{ revenueValue(order) | number: '1.0-0' }}</div>
+                    <div class="text-xs text-slate-500">COD {{ order.cod_amount | number: '1.0-0' }}</div>
+                    @if (!isRevenueOrder(order)) {
+                      <div class="text-xs font-medium text-red-600">Không tính doanh thu</div>
+                    }
+                  </td>
+                  <td [class.text-red-700]="profitValue(order) < 0" [class.text-emerald-700]="profitValue(order) >= 0">
+                    {{ profitValue(order) | number: '1.0-0' }}
+                  </td>
+                  <td><nz-tag [nzColor]="statusColor(order.status)">{{ order.status }}</nz-tag></td>
+                  <td>
+                    <button nz-button nzSize="small" (click)="selectOrder(order)">
+                      <span nz-icon nzType="eye"></span>
+                      Xem
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
+
+        <div class="surface p-5">
+          @if (selectedOrder()) {
+            <div class="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 class="m-0 text-xl font-semibold text-slate-950">{{ selectedOrder()?.tiktok_order_id || selectedOrder()?.order_code }}</h2>
+                <p class="m-0 mt-1 text-sm text-slate-500">{{ selectedOrder()?.delivery_option_name || '-' }} · {{ selectedOrder()?.shipping_provider || '-' }}</p>
+              </div>
+              <nz-tag [nzColor]="statusColor(selectedOrder()?.status || '')">{{ selectedOrder()?.status }}</nz-tag>
+            </div>
+
+            <div class="grid gap-3">
+              <div class="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div class="text-xs font-semibold uppercase text-slate-500">Khách mua</div>
+                <div class="mt-1 break-words font-semibold text-slate-950">{{ selectedOrder()?.customer_name || '-' }}</div>
+                <div class="text-sm text-slate-600">{{ selectedOrder()?.customer_phone || '-' }}</div>
+                <div class="mt-2 max-h-20 overflow-auto break-words text-sm leading-5 text-slate-600">{{ selectedOrder()?.customer_address || '-' }}</div>
+              </div>
+
+              <div class="grid gap-3 md:grid-cols-2">
+                <div class="rounded-lg border border-slate-200 p-3">
+                  <div class="text-xs font-semibold uppercase text-slate-500">Thanh toán</div>
+                  <div class="mt-1">{{ selectedOrder()?.payment_method_name || '-' }}</div>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                  <div class="text-xs font-semibold uppercase text-slate-500">Vận chuyển</div>
+                  <div class="mt-1 truncate" [title]="selectedOrder()?.shipping_provider || '-'">{{ selectedOrder()?.shipping_provider || '-' }}</div>
+                </div>
+              </div>
+
+              <div class="grid gap-3 md:grid-cols-3">
+                <div class="rounded-lg border border-slate-200 p-3">
+                  <div class="text-xs font-semibold uppercase text-slate-500">Doanh thu</div>
+                  <div class="mt-1 font-semibold">{{ revenueValue(selectedOrder()) | number: '1.0-0' }}</div>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                  <div class="text-xs font-semibold uppercase text-slate-500">Giá vốn</div>
+                  <div class="mt-1 font-semibold">{{ selectedOrder()?.total_cost | number: '1.0-0' }}</div>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                  <div class="text-xs font-semibold uppercase text-slate-500">Lợi nhuận</div>
+                  <div class="mt-1 font-semibold" [class.text-red-700]="profitValue(selectedOrder()) < 0" [class.text-emerald-700]="profitValue(selectedOrder()) >= 0">
+                    {{ profitValue(selectedOrder()) | number: '1.0-0' }}
+                  </div>
+                </div>
+              </div>
+              @if (!isRevenueOrder(selectedOrder())) {
+                <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                  Đơn đã hủy/trả hàng nên không tính vào doanh thu và lợi nhuận.
+                </div>
+              }
+
+              <div>
+                <h3 class="m-0 mb-3 text-base font-semibold text-slate-950">SKU trong đơn</h3>
+                <div class="mb-4 rounded-lg border border-slate-200 p-3">
+                  <div class="mb-2 text-xs font-semibold uppercase text-slate-500">Chi tiet tien</div>
+                  <div class="money-lines">
+                    <div>
+                      <span>Tong doanh thu</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.gross_amount ?? selectedOrder()?.gross_amount) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Khach tra</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.customer_paid ?? selectedOrder()?.cod_amount) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Giam gia</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.discount_amount ?? selectedOrder()?.discount_amount) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Phi hoa hong nen tang</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.platform_fee ?? selectedOrder()?.platform_fee) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Phi giao dich</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.transaction_fee ?? selectedOrder()?.transaction_fee) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Phi tham gia ship</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.shipping_fee ?? selectedOrder()?.shipping_fee) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Thue TNCN / phi khac</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.other_fee ?? selectedOrder()?.return_fee) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div class="settlement">
+                      <span>Tong tien TikTok tra</span>
+                      <strong>{{ revenueValue(selectedOrder()) | number: '1.0-0' }}</strong>
+                    </div>
+                    <div>
+                      <span>Gia von</span>
+                      <strong>{{ (selectedOrder()?.profit_breakdown?.total_cost ?? selectedOrder()?.total_cost) | number: '1.0-0' }}</strong>
+                    </div>
+                  <div class="profit" [class.negative]="profitValue(selectedOrder()) < 0">
+                    <span>Loi nhuan</span>
+                      <strong>{{ profitValue(selectedOrder()) | number: '1.0-0' }}</strong>
+                  </div>
+                  </div>
+                </div>
+                <nz-table nzSize="small" [nzData]="selectedOrder()?.items || []" [nzFrontPagination]="false" >
+                  <thead>
+                    <tr>
+                      <th class="">SKU</th>
+                      <th class=" ">SL</th>
+                      <th class=" ">Doanh thu</th>
+                      <th class=" ">Giá vốn</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of selectedOrder()?.items || []; track item.id) {
+                      <tr>
+                        <td class="max-w-[260px]">
+                          <div class="truncate font-medium" [title]="item.sku_code">{{ item.sku_code }}</div>
+                          <div class="truncate text-xs text-slate-500" [title]="item.sku_display_name">{{ item.sku_display_name }}</div>
+                        </td>
+                        <td class="text-center">{{ item.quantity }}</td>
+                        <td class="text-right">{{ item.total_sale | number: '1.0-0' }}</td>
+                        <td class="text-right">{{ item.total_cost | number: '1.0-0' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </nz-table>
+                @if ((selectedOrder()?.items || []).length === 0) {
+                  <div class="mt-3 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+                    Chưa khớp được SKU kho từ seller_sku. Kiểm tra raw JSON hoặc cấu hình SKU kho.
+                  </div>
+                }
+              </div>
+
+              @if (auth.isAdmin()) {
+                <div class="border-t border-slate-200 pt-4">
+                  <form class="flex flex-wrap gap-2" [formGroup]="statusForm" (ngSubmit)="updateStatus()">
+                    <nz-select class="!w-44" formControlName="status">
+                      <nz-option nzValue="pending" nzLabel="Pending" />
+                      <nz-option nzValue="confirmed" nzLabel="Confirmed" />
+                      <nz-option nzValue="shipped" nzLabel="Shipped" />
+                      <nz-option nzValue="completed" nzLabel="Completed" />
+                      <nz-option nzValue="cancelled" nzLabel="Cancelled" />
+                      <nz-option nzValue="returned" nzLabel="Returned" />
+                    </nz-select>
+                    <button nz-button type="submit" [nzLoading]="savingStatus()">Cập nhật</button>
+                  </form>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="rounded-lg bg-slate-100 p-4 text-sm text-slate-600">Chọn một đơn để xem thông tin khách mua và chi tiết đơn hàng.</div>
+          }
+        </div>
+      </div>
+    </section>
+  

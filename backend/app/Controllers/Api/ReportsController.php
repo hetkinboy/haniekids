@@ -13,6 +13,8 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class ReportsController extends BaseController
 {
+    private const REVENUE_STATUSES = ['pending', 'confirmed', 'shipped', 'completed'];
+
     private OrderModel $orders;
     private OrderItemModel $orderItems;
     private ProductModel $products;
@@ -38,6 +40,7 @@ class ReportsController extends BaseController
             ->select('COUNT(*) AS order_count, COALESCE(SUM(gross_amount),0) AS gross_amount, COALESCE(SUM(net_revenue),0) AS net_revenue, COALESCE(SUM(total_cost),0) AS total_cost, COALESCE(SUM(total_profit),0) AS total_profit')
             ->where('order_date >=', $dateFrom . ' 00:00:00')
             ->where('order_date <=', $dateTo . ' 23:59:59')
+            ->whereIn('status', self::REVENUE_STATUSES)
             ->first();
 
         $operatingCost = $this->costs
@@ -74,15 +77,19 @@ class ReportsController extends BaseController
     {
         [$dateFrom, $dateTo] = $this->dateRange();
 
-        $rows = $this->orderItems
+        $itemRows = $this->orderItems
             ->select('order_items.product_id, products.product_code, products.name AS product_name, SUM(order_items.quantity) AS quantity_sold, SUM(order_items.total_sale) AS total_sale, SUM(order_items.total_cost) AS total_cost, SUM(order_items.profit) AS profit')
             ->join('orders', 'orders.id = order_items.order_id')
             ->join('products', 'products.id = order_items.product_id')
             ->where('orders.order_date >=', $dateFrom . ' 00:00:00')
             ->where('orders.order_date <=', $dateTo . ' 23:59:59')
+            ->whereIn('orders.status', self::REVENUE_STATUSES)
+            ->where('products.deleted_at', null)
             ->groupBy('order_items.product_id, products.product_code, products.name')
-            ->orderBy('profit', 'DESC')
             ->findAll();
+
+        $rows = array_merge($itemRows, $this->legacyProductRows($dateFrom, $dateTo));
+        usort($rows, static fn (array $a, array $b): int => (float) $b['profit'] <=> (float) $a['profit']);
 
         return api_success('Success', [
             'items' => array_map(fn (array $row): array => [
@@ -101,14 +108,17 @@ class ReportsController extends BaseController
     {
         [$dateFrom, $dateTo] = $this->dateRange();
 
-        $rows = $this->orderItems
-            ->select('sku_id, sku_code, sku_display_name, size_name, combo_name, combo_quantity, SUM(quantity) AS quantity_sold, SUM(total_sale) AS total_sale, SUM(total_cost) AS total_cost, SUM(profit) AS profit')
+        $itemRows = $this->orderItems
+            ->select('order_items.sku_id, order_items.sku_code, order_items.sku_display_name, order_items.size_name, order_items.combo_name, order_items.combo_quantity, SUM(order_items.quantity) AS quantity_sold, SUM(order_items.total_sale) AS total_sale, SUM(order_items.total_cost) AS total_cost, SUM(order_items.profit) AS profit')
             ->join('orders', 'orders.id = order_items.order_id')
             ->where('orders.order_date >=', $dateFrom . ' 00:00:00')
             ->where('orders.order_date <=', $dateTo . ' 23:59:59')
-            ->groupBy('sku_id, sku_code, sku_display_name, size_name, combo_name, combo_quantity')
-            ->orderBy('profit', 'DESC')
+            ->whereIn('orders.status', self::REVENUE_STATUSES)
+            ->groupBy('order_items.sku_id, order_items.sku_code, order_items.sku_display_name, order_items.size_name, order_items.combo_name, order_items.combo_quantity')
             ->findAll();
+
+        $rows = array_merge($itemRows, $this->legacySkuRows($dateFrom, $dateTo));
+        usort($rows, static fn (array $a, array $b): int => (float) $b['profit'] <=> (float) $a['profit']);
 
         return api_success('Success', [
             'items' => array_map(fn (array $row): array => [
@@ -132,6 +142,7 @@ class ReportsController extends BaseController
             ->select('stock_by_size.*, products.product_code, products.name AS product_name, variant_options.name AS size_name')
             ->join('products', 'products.id = stock_by_size.product_id')
             ->join('variant_options', 'variant_options.id = stock_by_size.size_option_id')
+            ->where('products.deleted_at', null)
             ->orderBy('quantity_available', 'ASC')
             ->findAll();
 
@@ -157,5 +168,33 @@ class ReportsController extends BaseController
         $dateTo = $this->request->getGet('date_to') ?: date('Y-m-d');
 
         return [$dateFrom, $dateTo];
+    }
+
+    private function legacyProductRows(string $dateFrom, string $dateTo): array
+    {
+        $rows = $this->orders->db->table('orders')
+            ->select("'legacy_tiktok' AS product_id, 'LEGACY' AS product_code, 'Đơn TikTok chưa có SKU chi tiết' AS product_name, COUNT(*) AS quantity_sold, COALESCE(SUM(gross_amount), 0) AS total_sale, COALESCE(SUM(total_cost), 0) AS total_cost, COALESCE(SUM(total_profit), 0) AS profit", false)
+            ->where('order_date >=', $dateFrom . ' 00:00:00')
+            ->where('order_date <=', $dateTo . ' 23:59:59')
+            ->whereIn('status', self::REVENUE_STATUSES)
+            ->where('id NOT IN (SELECT DISTINCT order_id FROM order_items)', null, false)
+            ->get()
+            ->getResultArray();
+
+        return ((int) ($rows[0]['quantity_sold'] ?? 0)) > 0 ? $rows : [];
+    }
+
+    private function legacySkuRows(string $dateFrom, string $dateTo): array
+    {
+        $rows = $this->orders->db->table('orders')
+            ->select("'legacy_tiktok' AS sku_id, 'LEGACY' AS sku_code, 'Đơn TikTok chưa có SKU chi tiết' AS sku_display_name, '' AS size_name, '' AS combo_name, 1 AS combo_quantity, COUNT(*) AS quantity_sold, COALESCE(SUM(gross_amount), 0) AS total_sale, COALESCE(SUM(total_cost), 0) AS total_cost, COALESCE(SUM(total_profit), 0) AS profit", false)
+            ->where('order_date >=', $dateFrom . ' 00:00:00')
+            ->where('order_date <=', $dateTo . ' 23:59:59')
+            ->whereIn('status', self::REVENUE_STATUSES)
+            ->where('id NOT IN (SELECT DISTINCT order_id FROM order_items)', null, false)
+            ->get()
+            ->getResultArray();
+
+        return ((int) ($rows[0]['quantity_sold'] ?? 0)) > 0 ? $rows : [];
     }
 }

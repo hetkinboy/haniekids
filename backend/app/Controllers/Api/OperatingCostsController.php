@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Models\OperatingFeeSettingModel;
 use App\Models\OperatingCostModel;
 use App\Models\OrderModel;
 use App\Models\ProductModel;
@@ -11,14 +12,67 @@ use CodeIgniter\HTTP\ResponseInterface;
 class OperatingCostsController extends BaseController
 {
     private OperatingCostModel $costs;
+    private OperatingFeeSettingModel $feeSettings;
     private ProductModel $products;
     private OrderModel $orders;
 
     public function __construct()
     {
         $this->costs = new OperatingCostModel();
+        $this->feeSettings = new OperatingFeeSettingModel();
         $this->products = new ProductModel();
         $this->orders = new OrderModel();
+    }
+
+    public function feeSettings(): ResponseInterface
+    {
+        return api_success('Success', [
+            'items' => array_map(
+                fn (array $item): array => $this->formatFeeSetting($item),
+                $this->feeSettings->orderBy('id', 'ASC')->findAll(),
+            ),
+        ]);
+    }
+
+    public function saveFeeSettings(): ResponseInterface
+    {
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $items = $payload['items'] ?? [];
+
+        if (! is_array($items)) {
+            return api_error('Validation failed', ['items' => 'Items must be an array.'], 422);
+        }
+
+        $this->feeSettings->db->transStart();
+
+        foreach ($items as $item) {
+            $feeKey = trim((string) ($item['fee_key'] ?? ''));
+            $existing = $feeKey === '' ? null : $this->feeSettings->where('fee_key', $feeKey)->first();
+
+            if (! $existing) {
+                continue;
+            }
+
+            $valueType = $item['value_type'] ?? $existing['value_type'];
+            if (! in_array($valueType, ['percent', 'fixed'], true)) {
+                $valueType = $existing['value_type'];
+            }
+
+            $this->feeSettings->update((int) $existing['id'], [
+                'label'      => trim((string) ($item['label'] ?? $existing['label'])),
+                'value_type' => $valueType,
+                'rate'       => max(0, (float) ($item['rate'] ?? 0)),
+                'status'     => in_array($item['status'] ?? $existing['status'], ['active', 'inactive'], true) ? $item['status'] ?? $existing['status'] : 'active',
+            ]);
+        }
+
+        $this->feeSettings->db->transComplete();
+
+        if ($this->feeSettings->db->transStatus() === false) {
+            return api_error('Could not save fee settings', [], 500);
+        }
+
+        return $this->feeSettings();
     }
 
     public function index(): ResponseInterface
@@ -29,10 +83,7 @@ class OperatingCostsController extends BaseController
         $page = max(1, (int) ($this->request->getGet('page') ?? 1));
         $pageSize = min(100, max(1, (int) ($this->request->getGet('pageSize') ?? 20)));
 
-        $builder = $this->costs
-            ->select('operating_costs.*, products.name AS product_name, orders.order_code')
-            ->join('products', 'products.id = operating_costs.product_id', 'left')
-            ->join('orders', 'orders.id = operating_costs.order_id', 'left');
+        $builder = $this->costs;
 
         if ($costType !== '') {
             $builder = $builder->where('operating_costs.cost_type', $costType);
@@ -46,6 +97,7 @@ class OperatingCostsController extends BaseController
             $builder = $builder->where('operating_costs.cost_date <=', $dateTo);
         }
 
+        $summary = $this->costSummary($costType, $dateFrom, $dateTo);
         $items = $builder->orderBy('operating_costs.id', 'DESC')->paginate($pageSize, 'default', $page);
 
         return api_success('Success', [
@@ -55,7 +107,33 @@ class OperatingCostsController extends BaseController
                 'pageSize' => $pageSize,
                 'total' => $this->costs->pager->getTotal(),
             ],
+            'summary' => $summary,
         ]);
+    }
+
+    private function costSummary(string $costType, mixed $dateFrom, mixed $dateTo): array
+    {
+        $builder = $this->costs->db->table('operating_costs')
+            ->select('COUNT(*) AS total_costs, COALESCE(SUM(amount), 0) AS total_amount', false);
+
+        if ($costType !== '') {
+            $builder->where('cost_type', $costType);
+        }
+
+        if ($dateFrom !== null && $dateFrom !== '') {
+            $builder->where('cost_date >=', $dateFrom);
+        }
+
+        if ($dateTo !== null && $dateTo !== '') {
+            $builder->where('cost_date <=', $dateTo);
+        }
+
+        $row = $builder->get()->getRowArray() ?? [];
+
+        return [
+            'total_costs' => (int) ($row['total_costs'] ?? 0),
+            'total_amount' => (float) ($row['total_amount'] ?? 0),
+        ];
     }
 
     public function show(int $id): ResponseInterface
@@ -128,12 +206,8 @@ class OperatingCostsController extends BaseController
             $errors['amount'] = 'Amount must be greater than or equal to 0.';
         }
 
-        if (! empty($payload['product_id']) && ! $this->products->find((int) $payload['product_id'])) {
-            $errors['product_id'] = 'Product not found.';
-        }
-
-        if (! empty($payload['order_id']) && ! $this->orders->find((int) $payload['order_id'])) {
-            $errors['order_id'] = 'Order not found.';
+        if (! in_array($payload['allocation_type'] ?? 'day', ['day', 'month'], true)) {
+            $errors['allocation_type'] = 'Allocation type must be day or month.';
         }
 
         return $errors;
@@ -145,11 +219,19 @@ class OperatingCostsController extends BaseController
             'cost_date' => $payload['cost_date'],
             'cost_type' => $payload['cost_type'],
             'amount' => (float) $payload['amount'],
-            'allocation_type' => $payload['allocation_type'] ?? 'manual',
-            'product_id' => $payload['product_id'] ?? null,
-            'order_id' => $payload['order_id'] ?? null,
+            'allocation_type' => $payload['allocation_type'] ?? 'day',
+            'product_id' => null,
+            'order_id' => null,
             'note' => $payload['note'] ?? null,
         ];
+    }
+
+    private function formatFeeSetting(array $setting): array
+    {
+        $setting['id'] = (int) $setting['id'];
+        $setting['rate'] = (float) $setting['rate'];
+
+        return $setting;
     }
 
     private function formatCost(array $cost): array

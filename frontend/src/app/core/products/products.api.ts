@@ -5,18 +5,31 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../api/api.config';
 import {
   ApiResponse,
+  Pager,
   Product,
+  ProductCopyResult,
   ProductListData,
   ProductSku,
+  OperatingCost,
+  OperatingFeeSetting,
+  OperatingCostListData,
+  Order,
+  OrderListData,
   PurchaseImport,
   PurchaseImportListData,
+  ReportOverview,
+  ReportProductRow,
+  ReportSkuRow,
+  ReportStockRow,
   SkuListData,
   StockListData,
   StockMovementListData,
   TiktokProduct,
   TiktokProductListData,
   TiktokImportResult,
+  TiktokConnection,
   TiktokSku,
+  TiktokWebhookEvent,
   VariantGroup,
   VariantOption,
 } from '../api/api.models';
@@ -35,6 +48,10 @@ export class ProductsApi {
 
   updateProduct(id: number, payload: Partial<Product>): Observable<ApiResponse<Product>> {
     return this.http.put<ApiResponse<Product>>(`${API_BASE_URL}/products/${id}`, payload);
+  }
+
+  copyProduct(id: number, payload: Partial<Product>): Observable<ApiResponse<ProductCopyResult>> {
+    return this.http.post<ApiResponse<ProductCopyResult>>(`${API_BASE_URL}/products/${id}/copy`, payload);
   }
 
   deleteProduct(id: number): Observable<ApiResponse<unknown>> {
@@ -110,6 +127,54 @@ export class ProductsApi {
     return this.http.post<ApiResponse<PurchaseImport>>(`${API_BASE_URL}/purchase-imports`, payload);
   }
 
+  purchaseImport(id: number): Observable<ApiResponse<PurchaseImport>> {
+    return this.http.get<ApiResponse<PurchaseImport>>(`${API_BASE_URL}/purchase-imports/${id}`);
+  }
+
+  updatePurchaseImport(id: number, payload: unknown): Observable<ApiResponse<PurchaseImport>> {
+    return this.http.put<ApiResponse<PurchaseImport>>(`${API_BASE_URL}/purchase-imports/${id}`, payload);
+  }
+
+  operatingCosts(params: { cost_type?: string; date_from?: string; date_to?: string; page?: number; pageSize?: number }): Observable<ApiResponse<OperatingCostListData>> {
+    return this.http.get<ApiResponse<OperatingCostListData>>(`${API_BASE_URL}/operating-costs`, { params: this.params(params) });
+  }
+
+  createOperatingCost(payload: Partial<OperatingCost>): Observable<ApiResponse<OperatingCost>> {
+    return this.http.post<ApiResponse<OperatingCost>>(`${API_BASE_URL}/operating-costs`, payload);
+  }
+
+  updateOperatingCost(id: number, payload: Partial<OperatingCost>): Observable<ApiResponse<OperatingCost>> {
+    return this.http.put<ApiResponse<OperatingCost>>(`${API_BASE_URL}/operating-costs/${id}`, payload);
+  }
+
+  deleteOperatingCost(id: number): Observable<ApiResponse<unknown>> {
+    return this.http.delete<ApiResponse<unknown>>(`${API_BASE_URL}/operating-costs/${id}`);
+  }
+
+  operatingFeeSettings(): Observable<ApiResponse<{ items: OperatingFeeSetting[] }>> {
+    return this.http.get<ApiResponse<{ items: OperatingFeeSetting[] }>>(`${API_BASE_URL}/operating-cost-settings`);
+  }
+
+  saveOperatingFeeSettings(items: OperatingFeeSetting[]): Observable<ApiResponse<{ items: OperatingFeeSetting[] }>> {
+    return this.http.put<ApiResponse<{ items: OperatingFeeSetting[] }>>(`${API_BASE_URL}/operating-cost-settings`, { items });
+  }
+
+  orders(params: { keyword?: string; status?: string; platform?: string; date_from?: string; date_to?: string; page?: number; pageSize?: number }): Observable<ApiResponse<OrderListData>> {
+    return this.http.get<ApiResponse<OrderListData>>(`${API_BASE_URL}/orders`, { params: this.params(params) });
+  }
+
+  order(id: number): Observable<ApiResponse<Order>> {
+    return this.http.get<ApiResponse<Order>>(`${API_BASE_URL}/orders/${id}`);
+  }
+
+  updateOrderStatus(id: number, status: string): Observable<ApiResponse<Order>> {
+    return this.http.put<ApiResponse<Order>>(`${API_BASE_URL}/orders/${id}/status`, { status });
+  }
+
+  importTiktokOrder(orderId: string): Observable<ApiResponse<{ raw: unknown; orders: Order[] }>> {
+    return this.http.post<ApiResponse<{ raw: unknown; orders: Order[] }>>(`${API_BASE_URL}/tiktok/orders-new/${orderId}/import`, {});
+  }
+
   tiktokProducts(params: { keyword?: string; status?: string; page?: number; pageSize?: number }): Observable<ApiResponse<TiktokProductListData>> {
     return this.http.get<ApiResponse<TiktokProductListData>>(`${API_BASE_URL}/tiktok-products`, { params: this.params(params) });
   }
@@ -152,6 +217,38 @@ export class ProductsApi {
 
   importTiktokSearchUrl(url: string): Observable<ApiResponse<TiktokImportResult>> {
     return this.http.post<ApiResponse<TiktokImportResult>>(`${API_BASE_URL}/tiktok/import-search-url`, { url });
+  }
+
+  tiktokConnections(): Observable<ApiResponse<{ items: TiktokConnection[] }>> {
+    return this.http.get<ApiResponse<{ items: TiktokConnection[] }>>(`${API_BASE_URL}/tiktok/connections`);
+  }
+
+  createTiktokConnection(payload: Partial<TiktokConnection>): Observable<ApiResponse<TiktokConnection>> {
+    return this.http.post<ApiResponse<TiktokConnection>>(`${API_BASE_URL}/tiktok/connections`, payload);
+  }
+
+  updateTiktokConnection(id: number, payload: Partial<TiktokConnection>): Observable<ApiResponse<TiktokConnection>> {
+    return this.http.put<ApiResponse<TiktokConnection>>(`${API_BASE_URL}/tiktok/connections/${id}`, payload);
+  }
+
+  tiktokWebhookEvents(params: { process_status?: string; page?: number; pageSize?: number }): Observable<ApiResponse<{ items: TiktokWebhookEvent[]; pager: Pager }>> {
+    return this.http.get<ApiResponse<{ items: TiktokWebhookEvent[]; pager: Pager }>>(`${API_BASE_URL}/tiktok/webhook-events`, { params: this.params(params) });
+  }
+
+  reportOverview(params: { date_from?: string; date_to?: string }): Observable<ApiResponse<ReportOverview>> {
+    return this.http.get<ApiResponse<ReportOverview>>(`${API_BASE_URL}/reports/overview`, { params: this.params(params) });
+  }
+
+  reportByProduct(params: { date_from?: string; date_to?: string }): Observable<ApiResponse<{ items: ReportProductRow[] }>> {
+    return this.http.get<ApiResponse<{ items: ReportProductRow[] }>>(`${API_BASE_URL}/reports/by-product`, { params: this.params(params) });
+  }
+
+  reportBySku(params: { date_from?: string; date_to?: string }): Observable<ApiResponse<{ items: ReportSkuRow[] }>> {
+    return this.http.get<ApiResponse<{ items: ReportSkuRow[] }>>(`${API_BASE_URL}/reports/by-sku`, { params: this.params(params) });
+  }
+
+  reportStock(): Observable<ApiResponse<{ items: ReportStockRow[] }>> {
+    return this.http.get<ApiResponse<{ items: ReportStockRow[] }>>(`${API_BASE_URL}/reports/stock`);
   }
 
   private params(source: Record<string, string | number | undefined>): HttpParams {

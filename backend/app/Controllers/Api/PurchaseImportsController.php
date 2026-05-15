@@ -13,6 +13,8 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class PurchaseImportsController extends BaseController
 {
+    private const EDIT_WINDOW_SECONDS = 600;
+
     private PurchaseImportModel $imports;
     private PurchaseImportItemModel $items;
     private ProductModel $products;
@@ -55,6 +57,7 @@ class PurchaseImportsController extends BaseController
             $builder = $builder->where('import_date <=', $dateTo);
         }
 
+        $summary = $this->importSummary($keyword, $dateFrom, $dateTo);
         $imports = $builder->orderBy('id', 'DESC')->paginate($pageSize, 'default', $page);
 
         return api_success('Success', [
@@ -64,6 +67,7 @@ class PurchaseImportsController extends BaseController
                 'pageSize' => $pageSize,
                 'total'    => $this->imports->pager->getTotal(),
             ],
+            'summary' => $summary,
         ]);
     }
 
@@ -79,11 +83,13 @@ class PurchaseImportsController extends BaseController
             ->select('purchase_import_items.*, products.name AS product_name, variant_options.name AS size_name')
             ->join('products', 'products.id = purchase_import_items.product_id')
             ->join('variant_options', 'variant_options.id = purchase_import_items.size_option_id')
+            ->where('products.deleted_at', null)
             ->where('purchase_import_id', $id)
             ->findAll();
 
         $data = $this->formatImport($import);
         $data['items'] = array_map(fn (array $item): array => $this->formatImportItem($item), $items);
+        $data['can_edit'] = $this->canEditImport($import);
 
         return api_success('Success', $data);
     }
@@ -175,6 +181,49 @@ class PurchaseImportsController extends BaseController
         return api_success('Purchase import created', $this->showData($importId), 201);
     }
 
+    public function update(int $id): ResponseInterface
+    {
+        $import = $this->imports->find($id);
+
+        if (! $import) {
+            return api_error('Purchase import not found', [], 404);
+        }
+
+        if (! $this->canEditImport($import)) {
+            return api_error('Purchase import can only be edited within 10 minutes after creation', [], 422);
+        }
+
+        $payload = $this->request->getJSON(true) ?? $this->request->getRawInput();
+        $errors = $this->validatePayload($payload);
+
+        if ($errors !== []) {
+            return api_error('Validation failed', $errors, 422);
+        }
+
+        $this->imports->db->transStart();
+        $this->reverseImportStock($id);
+        $this->items->where('purchase_import_id', $id)->delete();
+        $this->movements->where('purchase_import_id', $id)->delete();
+
+        $totals = $this->applyImportItems($id, $payload['items']);
+        $this->imports->update($id, [
+            'import_code'     => trim((string) ($payload['import_code'] ?? '')) ?: $import['import_code'],
+            'supplier_name'   => $payload['supplier_name'] ?? null,
+            'import_date'     => $payload['import_date'],
+            'total_quantity'  => $totals['quantity'],
+            'total_amount'    => $totals['amount'],
+            'note'            => $payload['note'] ?? null,
+        ]);
+
+        $this->imports->db->transComplete();
+
+        if ($this->imports->db->transStatus() === false) {
+            return api_error('Could not update purchase import', [], 500);
+        }
+
+        return api_success('Purchase import updated', $this->showData($id));
+    }
+
     private function validatePayload(array $payload): array
     {
         $errors = [];
@@ -213,6 +262,35 @@ class PurchaseImportsController extends BaseController
         return $errors;
     }
 
+    private function importSummary(string $keyword, mixed $dateFrom, mixed $dateTo): array
+    {
+        $builder = $this->imports->db->table('purchase_imports')
+            ->select('COUNT(*) AS total_imports, COALESCE(SUM(total_quantity), 0) AS total_quantity, COALESCE(SUM(total_amount), 0) AS total_amount', false);
+
+        if ($keyword !== '') {
+            $builder->groupStart()
+                ->like('import_code', $keyword)
+                ->orLike('supplier_name', $keyword)
+                ->groupEnd();
+        }
+
+        if ($dateFrom !== null && $dateFrom !== '') {
+            $builder->where('import_date >=', $dateFrom);
+        }
+
+        if ($dateTo !== null && $dateTo !== '') {
+            $builder->where('import_date <=', $dateTo);
+        }
+
+        $row = $builder->get()->getRowArray() ?? [];
+
+        return [
+            'total_imports' => (int) ($row['total_imports'] ?? 0),
+            'total_quantity' => (int) ($row['total_quantity'] ?? 0),
+            'total_amount' => (float) ($row['total_amount'] ?? 0),
+        ];
+    }
+
     private function showData(int $id): array
     {
         $import = $this->imports->find($id);
@@ -220,13 +298,95 @@ class PurchaseImportsController extends BaseController
             ->select('purchase_import_items.*, products.name AS product_name, variant_options.name AS size_name')
             ->join('products', 'products.id = purchase_import_items.product_id')
             ->join('variant_options', 'variant_options.id = purchase_import_items.size_option_id')
+            ->where('products.deleted_at', null)
             ->where('purchase_import_id', $id)
             ->findAll();
 
         $data = $this->formatImport($import);
         $data['items'] = array_map(fn (array $item): array => $this->formatImportItem($item), $items);
+        $data['can_edit'] = $this->canEditImport($import);
 
         return $data;
+    }
+
+    private function applyImportItems(int $importId, array $items): array
+    {
+        $totalQuantity = 0;
+        $totalAmount = 0.0;
+
+        foreach ($items as $line) {
+            $productId = (int) $line['product_id'];
+            $sizeOptionId = (int) $line['size_option_id'];
+            $quantity = (int) $line['quantity'];
+            $unitCost = (float) $line['unit_cost'];
+            $lineTotal = $quantity * $unitCost;
+            $totalQuantity += $quantity;
+            $totalAmount += $lineTotal;
+
+            $itemId = $this->items->insert([
+                'purchase_import_id' => $importId,
+                'product_id'         => $productId,
+                'size_option_id'     => $sizeOptionId,
+                'quantity'           => $quantity,
+                'unit_cost'          => $unitCost,
+                'total_cost'         => $lineTotal,
+            ], true);
+
+            $stock = $this->findOrCreateStock($productId, $sizeOptionId, $unitCost);
+            $before = (int) $stock['quantity_on_hand'];
+            $after = $before + $quantity;
+            $avgCost = $this->weightedAverageCost($before, (float) $stock['avg_cost'], $quantity, $unitCost);
+
+            $this->stock->update($stock['id'], [
+                'quantity_on_hand'   => $after,
+                'quantity_available' => max(0, $after - (int) $stock['quantity_reserved']),
+                'avg_cost'           => $avgCost,
+            ]);
+
+            $this->movements->insert([
+                'product_id'          => $productId,
+                'size_option_id'      => $sizeOptionId,
+                'movement_type'       => 'import',
+                'quantity'            => $quantity,
+                'quantity_before'     => $before,
+                'quantity_after'      => $after,
+                'unit_cost'           => $unitCost,
+                'reference_type'      => 'purchase_import',
+                'reference_id'        => $importId,
+                'purchase_import_id'  => $importId,
+                'note'                => 'Import item #' . $itemId,
+            ]);
+        }
+
+        return ['quantity' => $totalQuantity, 'amount' => $totalAmount];
+    }
+
+    private function reverseImportStock(int $importId): void
+    {
+        $items = $this->items->where('purchase_import_id', $importId)->findAll();
+
+        foreach ($items as $item) {
+            $stock = $this->findOrCreateStock((int) $item['product_id'], (int) $item['size_option_id'], (float) $item['unit_cost']);
+            $before = (int) $stock['quantity_on_hand'];
+            $after = $before - (int) $item['quantity'];
+
+            if ($after < 0) {
+                $after = 0;
+            }
+
+            $this->stock->update($stock['id'], [
+                'quantity_on_hand'   => $after,
+                'quantity_available' => max(0, $after - (int) $stock['quantity_reserved']),
+                'avg_cost'           => $after === 0 ? 0 : (float) $stock['avg_cost'],
+            ]);
+        }
+    }
+
+    private function canEditImport(array $import): bool
+    {
+        $createdAt = strtotime((string) ($import['created_at'] ?? ''));
+
+        return $createdAt !== false && time() - $createdAt <= self::EDIT_WINDOW_SECONDS;
     }
 
     private function isSizeOptionOfProduct(int $productId, int $sizeOptionId): bool
@@ -300,4 +460,3 @@ class PurchaseImportsController extends BaseController
         ];
     }
 }
-

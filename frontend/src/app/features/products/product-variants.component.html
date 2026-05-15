@@ -1,0 +1,277 @@
+
+    <section class="app-shell space-y-4">
+      <div class="page-header">
+        <div>
+          <h1 class="m-0 text-2xl font-semibold text-slate-950">Biến thể Size/Combo</h1>
+          <p class="m-0 mt-1 text-sm text-slate-500">Cấu hình size quản lý tồn và combo quy đổi số bộ khi bán.</p>
+        </div>
+        <div class="flex gap-2">
+          <a nz-button routerLink="/products">Sản phẩm</a>
+          <a nz-button nzType="primary" [routerLink]="['/products', productId(), 'skus']">Xem SKU</a>
+        </div>
+      </div>
+
+      <div class="status-note">
+        Tồn kho chỉ được tạo theo Size. Combo 3/5 không phải kho riêng, chỉ lưu combo_quantity để sau này trừ đúng số bộ theo size.
+      </div>
+
+      @if (auth.isAdmin()) {
+        <div class="grid gap-3 lg:grid-cols-2">
+          <form class="surface p-4" [formGroup]="sizeForm" (ngSubmit)="createSizeGroup()">
+            <div class="mb-3">
+              <div class="font-semibold text-slate-950">Nhóm Size</div>
+              <div class="text-xs text-slate-500">Biến thể quản lý tồn kho thật</div>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
+              <input nz-input formControlName="name" />
+              <nz-input-number class="!w-full" formControlName="sort_order" />
+              <button nz-button nzType="default" [disabled]="hasSizeGroup()">Tạo</button>
+            </div>
+          </form>
+          <form class="surface p-4" [formGroup]="comboForm" (ngSubmit)="createComboGroup()">
+            <div class="mb-3">
+              <div class="font-semibold text-slate-950">Nhóm Combo</div>
+              <div class="text-xs text-slate-500">Cách bán ra, không tạo tồn kho</div>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
+              <input nz-input formControlName="name" />
+              <nz-input-number class="!w-full" formControlName="sort_order" />
+              <button nz-button nzType="default" [disabled]="hasComboGroup()">Tạo</button>
+            </div>
+          </form>
+        </div>
+      }
+
+      <div class="grid gap-4 xl:grid-cols-2">
+        @for (group of groups(); track group.id) {
+          <div class="surface p-4">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <div class="font-semibold text-slate-950">{{ group.name }}</div>
+                <div class="mt-1 flex flex-wrap items-center gap-1 text-xs text-slate-500">
+                  <nz-tag>{{ group.type }}</nz-tag>
+                  @if (group.is_stock_dimension) {
+                    <nz-tag nzColor="blue">Tồn kho theo size</nz-tag>
+                  }
+                </div>
+              </div>
+              @if (auth.isAdmin()) {
+                <button
+                  nz-button
+                  nzDanger
+                  nzSize="small"
+                  nz-popconfirm
+                  nzPopconfirmTitle="Xóa nhóm này?"
+                  (nzOnConfirm)="deleteGroup(group.id)"
+                >
+                  Xóa nhóm
+                </button>
+              }
+            </div>
+
+            @if (auth.isAdmin()) {
+              <form class="mb-3 grid gap-2 md:grid-cols-4" [formGroup]="optionForm" (ngSubmit)="createOption(group)">
+                <input nz-input formControlName="name" placeholder="Tên tùy chọn" />
+                @if (group.type === 'text') {
+                  <nz-input-number class="!w-full" formControlName="base_cost" nzPlaceHolder="Giá vốn 1 bộ" />
+                } @else {
+                  <nz-input-number class="!w-full" formControlName="combo_quantity" nzPlaceHolder="Số bộ" />
+                }
+                <nz-input-number class="!w-full" formControlName="sort_order" nzPlaceHolder="Thứ tự" />
+                <button nz-button nzType="primary">
+                  <span nz-icon nzType="plus"></span>
+                  Thêm
+                </button>
+              </form>
+            }
+
+            <div class="data-table">
+              <nz-table nzSize="small" [nzData]="group.options" [nzFrontPagination]="false" [nzScroll]="{ x: '620px' }">
+                <thead>
+                  <tr>
+                    <th>Tên</th>
+                    <th>{{ group.type === 'combo' ? 'Số bộ' : 'Giá vốn 1 bộ' }}</th>
+                    <th>Thứ tự</th>
+                    <th>Active</th>
+                    @if (auth.isAdmin()) {
+                      <th class="w-[230px]">Thao tác</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (option of group.options; track option.id) {
+                    <tr>
+                      <td class="font-medium">{{ option.name }}</td>
+                      <td>{{ group.type === 'combo' ? option.combo_quantity : (option.base_cost | number: '1.0-0') }}</td>
+                      <td>{{ option.sort_order }}</td>
+                      <td>
+                        <nz-tag [nzColor]="option.is_active ? 'green' : 'default'">{{ option.is_active ? 'Active' : 'Inactive' }}</nz-tag>
+                      </td>
+                      @if (auth.isAdmin()) {
+                        <td>
+                          <div class="flex flex-wrap gap-2">
+                            <button nz-button nzSize="small" (click)="openEditOption(group, option)">
+                              <span nz-icon nzType="edit"></span>
+                              Sửa
+                            </button>
+                            <button nz-button nzSize="small" (click)="toggleOption(option)">
+                              {{ option.is_active ? 'Tắt' : 'Bật' }}
+                            </button>
+                            <button nz-button nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa tùy chọn này?" (nzOnConfirm)="deleteOption(option.id)">
+                              Xóa
+                            </button>
+                          </div>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </nz-table>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (auth.isAdmin()) {
+        <div class="surface p-5">
+          <div class="mb-4">
+            <div class="font-semibold text-slate-950">Sinh SKU kho tự động</div>
+            <div class="text-sm text-slate-500">Các phần SKU được nối bằng dấu gạch ngang, giữ nguyên chữ hoa/thường bạn nhập. Ví dụ: AT-01-2bo-5.</div>
+          </div>
+          <form class="space-y-4" [formGroup]="skuForm" (ngSubmit)="generateSkus()">
+            <div class="grid gap-4 md:grid-cols-[260px_220px_180px]">
+            <nz-form-item>
+              <nz-form-label>Tiền tố SKU</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="sku_prefix" placeholder="Ví dụ: SP001" />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label>Thứ tự biến thể</nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="variant_order">
+                  <nz-option nzValue="size_combo" nzLabel="Size trước - Combo sau" />
+                  <nz-option nzValue="combo_size" nzLabel="Combo trước - Size sau" />
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label>Ghi đè</nz-form-label>
+              <nz-form-control>
+                <label nz-checkbox formControlName="overwrite">Ghi đè SKU đã có</label>
+              </nz-form-control>
+            </nz-form-item>
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-2">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="mb-3 font-semibold text-slate-800">Biến thể Size</div>
+                <div class="grid gap-3 sm:grid-cols-[1fr_180px]">
+                  <nz-form-item>
+                    <nz-form-label>Tiền tố Size</nz-form-label>
+                    <nz-form-control>
+                      <input nz-input formControlName="size_prefix" placeholder="Để trống nếu chỉ lấy tên size" />
+                    </nz-form-control>
+                  </nz-form-item>
+                  <nz-form-item>
+                    <nz-form-label>Vị trí</nz-form-label>
+                    <nz-form-control>
+                      <nz-select formControlName="size_prefix_position">
+                        <nz-option nzValue="before" nzLabel="Hiển thị trước" />
+                        <nz-option nzValue="after" nzLabel="Hiển thị sau" />
+                      </nz-select>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+              </div>
+
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="mb-3 font-semibold text-slate-800">Biến thể Combo</div>
+                <div class="grid gap-3 sm:grid-cols-[1fr_180px]">
+                  <nz-form-item>
+                    <nz-form-label>Tiền tố Combo</nz-form-label>
+                    <nz-form-control>
+                      <input nz-input formControlName="combo_prefix" placeholder="Ví dụ: bo" />
+                    </nz-form-control>
+                  </nz-form-item>
+                  <nz-form-item>
+                    <nz-form-label>Vị trí</nz-form-label>
+                    <nz-form-control>
+                      <nz-select formControlName="combo_prefix_position">
+                        <nz-option nzValue="before" nzLabel="Hiển thị trước" />
+                        <nz-option nzValue="after" nzLabel="Hiển thị sau" />
+                      </nz-select>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end">
+            <button nz-button nzType="primary" [nzLoading]="generating()">
+              <span nz-icon nzType="tags"></span>
+              Sinh SKU
+            </button>
+            </div>
+          </form>
+        </div>
+      }
+    </section>
+
+    <nz-modal
+      [nzVisible]="optionModalVisible()"
+      [nzTitle]="editingOptionGroup()?.type === 'combo' ? 'Sửa tùy chọn Combo' : 'Sửa tùy chọn Size'"
+      nzOkText="Lưu"
+      nzCancelText="Hủy"
+      [nzOkLoading]="savingOption()"
+      (nzOnCancel)="closeEditOption()"
+      (nzOnOk)="saveOption()"
+      nzWidth="640px"
+    >
+      <ng-container *nzModalContent>
+        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="optionEditForm">
+          <nz-form-item>
+            <nz-form-label nzRequired>Tên tùy chọn</nz-form-label>
+            <nz-form-control nzErrorTip="Nhập tên tùy chọn">
+              <input nz-input formControlName="name" placeholder="Ví dụ: 5 hoặc Combo 3" />
+            </nz-form-control>
+          </nz-form-item>
+          @if (editingOptionGroup()?.type === 'combo') {
+            <nz-form-item>
+              <nz-form-label nzRequired>Số bộ</nz-form-label>
+              <nz-form-control>
+                <nz-input-number class="!w-full" formControlName="combo_quantity" [nzMin]="1" />
+              </nz-form-control>
+            </nz-form-item>
+          } @else {
+            <nz-form-item>
+              <nz-form-label>Giá vốn 1 bộ</nz-form-label>
+              <nz-form-control>
+                <nz-input-number class="!w-full" formControlName="base_cost" [nzMin]="0" />
+              </nz-form-control>
+            </nz-form-item>
+          }
+          <nz-form-item>
+            <nz-form-label>Thứ tự</nz-form-label>
+            <nz-form-control>
+              <nz-input-number class="!w-full" formControlName="sort_order" [nzMin]="0" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>Trạng thái</nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="is_active">
+                <nz-option [nzValue]="true" nzLabel="Active" />
+                <nz-option [nzValue]="false" nzLabel="Inactive" />
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+        @if (editingOptionGroup()?.type === 'combo') {
+          <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            Nếu Combo đã được dùng để sinh SKU, backend sẽ không cho đổi số bộ. Bạn vẫn sửa được tên, thứ tự và trạng thái.
+          </div>
+        }
+      </ng-container>
+    </nz-modal>
+  

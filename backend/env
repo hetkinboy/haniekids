@@ -67,3 +67,11 @@
 #--------------------------------------------------------------------
 
 # logger.threshold = 4
+
+#--------------------------------------------------------------------
+# TIKTOK
+#--------------------------------------------------------------------
+
+# Keep false while testing webhook stock sync. Set true only when real
+# TikTok inventory updates should be sent to the TikTok Shop API.
+# TIKTOK_INVENTORY_WRITE_ENABLED = false

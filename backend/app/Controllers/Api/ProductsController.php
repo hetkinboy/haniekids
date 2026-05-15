@@ -4,15 +4,21 @@ namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
 use App\Models\ProductModel;
+use App\Models\VariantGroupModel;
+use App\Models\VariantOptionModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class ProductsController extends BaseController
 {
     private ProductModel $products;
+    private VariantGroupModel $groups;
+    private VariantOptionModel $options;
 
     public function __construct()
     {
         $this->products = new ProductModel();
+        $this->groups = new VariantGroupModel();
+        $this->options = new VariantOptionModel();
     }
 
     public function index(): ResponseInterface
@@ -36,6 +42,7 @@ class ProductsController extends BaseController
             $builder = $builder->where('status', $status);
         }
 
+        $summary = $this->productSummary($keyword, $status);
         $items = $builder->orderBy('id', 'DESC')->paginate($perPage, 'default', $page);
 
         return api_success('Success', [
@@ -47,6 +54,7 @@ class ProductsController extends BaseController
                 'total'        => $this->products->pager->getTotal(),
                 'last_page'    => $this->products->pager->getPageCount(),
             ],
+            'summary' => $summary,
         ]);
     }
 
@@ -91,6 +99,85 @@ class ProductsController extends BaseController
         $this->products->update($id, $this->productData($payload));
 
         return api_success('Product updated', $this->formatProduct($this->products->find($id)));
+    }
+
+    public function copy(int $id): ResponseInterface
+    {
+        $source = $this->products->find($id);
+
+        if (! $source) {
+            return api_error('Product not found', [], 404);
+        }
+
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $data = [
+            'product_code' => $payload['product_code'] ?? '',
+            'name'         => $payload['name'] ?? '',
+            'category'     => array_key_exists('category', $payload) ? $payload['category'] : ($source['category'] ?? null),
+            'description'  => array_key_exists('description', $payload) ? $payload['description'] : ($source['description'] ?? null),
+            'image_url'    => array_key_exists('image_url', $payload) ? $payload['image_url'] : ($source['image_url'] ?? null),
+            'status'       => $payload['status'] ?? 'active',
+        ];
+
+        if (! $this->validatePayload($data)) {
+            return api_error('Validation failed', $this->validator->getErrors(), 422);
+        }
+
+        $this->products->db->transStart();
+
+        $newProductId = (int) $this->products->insert($this->productData($data), true);
+        $groupMap = [];
+        $optionMap = [];
+
+        $sourceGroups = $this->groups
+            ->where('product_id', $id)
+            ->orderBy('sort_order', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->findAll();
+
+        foreach ($sourceGroups as $group) {
+            $newGroupId = (int) $this->groups->insert([
+                'product_id'      => $newProductId,
+                'name'            => $group['name'],
+                'type'            => $group['type'],
+                'is_stock_group'  => (int) $group['is_stock_group'],
+                'sort_order'      => (int) $group['sort_order'],
+                'status'          => $group['status'],
+            ], true);
+            $groupMap[(int) $group['id']] = $newGroupId;
+
+            $sourceOptions = $this->options
+                ->where('variant_group_id', (int) $group['id'])
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+
+            foreach ($sourceOptions as $option) {
+                $newOptionId = (int) $this->options->insert([
+                    'variant_group_id' => $newGroupId,
+                    'name'             => $option['name'],
+                    'option_code'      => $option['option_code'],
+                    'base_cost'        => (float) $option['base_cost'],
+                    'combo_quantity'   => $option['combo_quantity'],
+                    'default_sellable' => (int) $option['default_sellable'],
+                    'sort_order'       => (int) $option['sort_order'],
+                    'status'           => $option['status'],
+                ], true);
+                $optionMap[(int) $option['id']] = $newOptionId;
+            }
+        }
+
+        $this->products->db->transComplete();
+
+        if ($this->products->db->transStatus() === false) {
+            return api_error('Could not copy product', [], 500);
+        }
+
+        return api_success('Product copied', [
+            'product'      => $this->formatProduct($this->products->find($newProductId)),
+            'groups_copied'=> count($groupMap),
+            'options_copied' => count($optionMap),
+        ], 201);
     }
 
     public function delete(int $id): ResponseInterface
@@ -139,6 +226,36 @@ class ProductsController extends BaseController
         unset($product['main_sku']);
 
         return $product;
+    }
+
+    private function productSummary(string $keyword, string $status): array
+    {
+        $builder = $this->products->db->table('products')
+            ->select("
+                COUNT(*) AS total_products,
+                COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) AS active_products,
+                COALESCE(SUM(CASE WHEN status <> 'active' THEN 1 ELSE 0 END), 0) AS inactive_products
+            ", false)
+            ->where('deleted_at', null);
+
+        if ($keyword !== '') {
+            $builder->groupStart()
+                ->like('product_code', $keyword)
+                ->orLike('name', $keyword)
+                ->groupEnd();
+        }
+
+        if ($status !== '') {
+            $builder->where('status', $status);
+        }
+
+        $row = $builder->get()->getRowArray() ?? [];
+
+        return [
+            'total_products' => (int) ($row['total_products'] ?? 0),
+            'active_products' => (int) ($row['active_products'] ?? 0),
+            'inactive_products' => (int) ($row['inactive_products'] ?? 0),
+        ];
     }
 
     private function emptyToNull(mixed $value): ?string

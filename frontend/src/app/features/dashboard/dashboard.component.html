@@ -1,0 +1,200 @@
+<section class="app-shell space-y-6">
+  <div class="page-header">
+    <div>
+      <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Dashboard</h1>
+      <p class="m-0 mt-1 text-sm text-slate-500">Tổng quan hôm nay về đơn TikTok, lợi nhuận, nhập hàng và tồn kho.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a nz-button routerLink="/tiktok-orders">
+        <span nz-icon nzType="tags"></span>
+        Đơn TikTok
+      </a>
+      <button nz-button nzType="primary" (click)="load()" [nzLoading]="loading()">
+        <span nz-icon nzType="reload"></span>
+        Tải lại
+      </button>
+    </div>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="metric-card">
+      <div class="flex items-start justify-between gap-3">
+        <span class="metric-label">Đơn hôm nay</span>
+        <span class="text-[#006a65]" nz-icon nzType="tags"></span>
+      </div>
+      <div class="metric-value">{{ overview()?.orders?.count || 0 }}</div>
+      <div class="mt-2 text-xs text-slate-500">{{ cancelledOrders() }} đơn hủy/trả trong danh sách mới</div>
+    </div>
+    <div class="metric-card">
+      <div class="flex items-start justify-between gap-3">
+        <span class="metric-label">Tiền TikTok trả</span>
+        <span class="text-emerald-700" nz-icon nzType="save"></span>
+      </div>
+      <div class="metric-value text-[#006a65]">{{ (overview()?.orders?.net_revenue || 0) | number: '1.0-0' }}</div>
+      <div class="mt-2 text-xs text-slate-500">Doanh thu {{ (overview()?.orders?.gross_amount || 0) | number: '1.0-0' }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="flex items-start justify-between gap-3">
+        <span class="metric-label">Lợi nhuận đơn</span>
+        <span class="text-orange-700" nz-icon nzType="appstore"></span>
+      </div>
+      <div class="metric-value" [class.text-red-700]="isNegative(overview()?.orders?.gross_profit)" [class.text-emerald-700]="!isNegative(overview()?.orders?.gross_profit)">
+        {{ (overview()?.orders?.gross_profit || 0) | number: '1.0-0' }}
+      </div>
+      <div class="mt-2 text-xs text-slate-500">Giá vốn {{ (overview()?.orders?.total_cost || 0) | number: '1.0-0' }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="flex items-start justify-between gap-3">
+        <span class="metric-label">Sau chi phí vận hành</span>
+        <span class="text-blue-700" nz-icon nzType="edit"></span>
+      </div>
+      <div class="metric-value" [class.text-red-700]="isNegative(overview()?.net_profit_after_operating_cost)" [class.text-emerald-700]="!isNegative(overview()?.net_profit_after_operating_cost)">
+        {{ (overview()?.net_profit_after_operating_cost || 0) | number: '1.0-0' }}
+      </div>
+      <div class="mt-2 text-xs text-slate-500">Chi phí {{ (overview()?.operating_cost || 0) | number: '1.0-0' }}</div>
+    </div>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="metric-card">
+      <span class="metric-label">Sản phẩm kho</span>
+      <div class="metric-value">{{ productTotal() }}</div>
+      <div class="mt-2 text-xs text-[#006a65]">{{ activeProducts() }} đang kinh doanh</div>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Nhập hàng hôm nay</span>
+      <div class="metric-value">{{ importAmount() | number: '1.0-0' }}</div>
+      <div class="mt-2 text-xs text-slate-500">{{ importQuantity() }} sản phẩm đã nhập</div>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Tồn có thể bán</span>
+      <div class="metric-value text-[#006a65]">{{ (overview()?.stock?.quantity_available || 0) | number: '1.0-0' }}</div>
+      <div class="mt-2 text-xs text-slate-500">Giá trị tồn {{ (overview()?.stock?.stock_value || 0) | number: '1.0-0' }}</div>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Size sắp hết</span>
+      <div class="metric-value text-red-600">{{ lowStock().length }}</div>
+      <div class="mt-2 text-xs text-red-600">Ngưỡng cảnh báo: còn 5 hoặc thấp hơn</div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+    <div class="surface p-5">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 class="m-0 text-xl font-semibold text-slate-950">Đơn TikTok mới</h2>
+          <p class="m-0 text-sm text-slate-500">Danh sách hôm nay, đơn hủy/trả không được tính vào doanh thu.</p>
+        </div>
+        <a nz-button routerLink="/tiktok-orders">Xem tất cả</a>
+      </div>
+      <nz-table [nzData]="orders()" [nzLoading]="loading()" [nzFrontPagination]="false" [nzScroll]="{ x: '760px' }">
+        <thead>
+          <tr>
+            <th>Mã đơn</th>
+            <th>Khách</th>
+            <th>Tiền TikTok trả</th>
+            <th>Lợi nhuận</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders(); track order.id) {
+            <tr>
+              <td class="font-semibold text-slate-950">{{ order.tiktok_order_id || order.order_code }}</td>
+              <td>
+                <div class="max-w-[180px] truncate" [title]="order.customer_name || '-'">{{ order.customer_name || '-' }}</div>
+                <div class="text-xs text-slate-500">{{ order.customer_phone || '' }}</div>
+              </td>
+              <td class="text-right">{{ (['cancelled', 'returned'].includes(order.status) ? 0 : order.net_revenue) | number: '1.0-0' }}</td>
+              <td class="text-right font-semibold" [class.text-red-700]="order.total_profit < 0" [class.text-emerald-700]="order.total_profit >= 0">
+                {{ (['cancelled', 'returned'].includes(order.status) ? 0 : order.total_profit) | number: '1.0-0' }}
+              </td>
+              <td><nz-tag [nzColor]="['cancelled', 'returned'].includes(order.status) ? 'red' : 'green'">{{ order.status }}</nz-tag></td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+
+    <div class="surface p-5">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <h2 class="m-0 text-xl font-semibold text-slate-950">Cảnh báo tồn kho</h2>
+        <nz-tag nzColor="orange">Cần kiểm tra</nz-tag>
+      </div>
+      <div class="space-y-3">
+        @for (item of lowStock().slice(0, 8); track item.product_id + '-' + item.size_option_id) {
+          <div class="rounded-lg bg-slate-100 p-3">
+            <div class="font-semibold text-slate-950">{{ item.product_code }} - {{ item.size_name }}</div>
+            <div class="truncate text-sm text-slate-500" [title]="item.product_name">{{ item.product_name }}</div>
+            <div class="mt-1 text-sm font-semibold text-red-600">Còn {{ item.quantity_available }}</div>
+          </div>
+        } @empty {
+          <div class="rounded-lg bg-slate-100 p-3 text-sm text-slate-500">Không có size sắp hết.</div>
+        }
+      </div>
+      <a class="mt-4 block" nz-button routerLink="/stock">Xem tồn kho</a>
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    <div class="surface p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="m-0 text-xl font-semibold text-slate-950">Top sản phẩm hôm nay</h2>
+        <a routerLink="/reports">Báo cáo</a>
+      </div>
+      <nz-table [nzData]="topProducts()" [nzLoading]="loading()" [nzFrontPagination]="false" [nzScroll]="{ x: '720px' }">
+        <thead>
+          <tr>
+            <th>Sản phẩm</th>
+            <th>SL</th>
+            <th>Doanh thu</th>
+            <th>Lợi nhuận</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of topProducts(); track item.product_id) {
+            <tr>
+              <td>
+                <div class="font-semibold text-slate-950">{{ item.product_code }}</div>
+                <div class="max-w-[260px] truncate text-xs text-slate-500" [title]="item.product_name">{{ item.product_name }}</div>
+              </td>
+              <td class="text-right">{{ item.quantity_sold }}</td>
+              <td class="text-right">{{ item.total_sale | number: '1.0-0' }}</td>
+              <td class="text-right font-semibold" [class.text-red-700]="item.profit < 0" [class.text-emerald-700]="item.profit >= 0">{{ item.profit | number: '1.0-0' }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+
+    <div class="surface p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="m-0 text-xl font-semibold text-slate-950">Top SKU hôm nay</h2>
+        <a routerLink="/reports">Báo cáo</a>
+      </div>
+      <nz-table [nzData]="topSkus()" [nzLoading]="loading()" [nzFrontPagination]="false" [nzScroll]="{ x: '720px' }">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>SL</th>
+            <th>Doanh thu</th>
+            <th>Lợi nhuận</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of topSkus(); track item.sku_id) {
+            <tr>
+              <td>
+                <div class="font-semibold text-slate-950">{{ item.sku_code }}</div>
+                <div class="max-w-[260px] truncate text-xs text-slate-500" [title]="item.sku_display_name">{{ item.sku_display_name }}</div>
+              </td>
+              <td class="text-right">{{ item.quantity_sold }}</td>
+              <td class="text-right">{{ item.total_sale | number: '1.0-0' }}</td>
+              <td class="text-right font-semibold" [class.text-red-700]="item.profit < 0" [class.text-emerald-700]="item.profit >= 0">{{ item.profit | number: '1.0-0' }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+  </div>
+</section>

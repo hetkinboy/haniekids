@@ -33,7 +33,7 @@ class TiktokProductsController extends BaseController
 
         $builder = $this->products
             ->select('tiktok_products.*, products.product_code, products.name AS warehouse_product_name')
-            ->join('products', 'products.id = tiktok_products.product_id', 'left');
+            ->join('products', 'products.id = tiktok_products.product_id AND products.deleted_at IS NULL', 'left');
 
         if ($keyword !== '') {
             $builder = $builder->groupStart()
@@ -47,6 +47,7 @@ class TiktokProductsController extends BaseController
             $builder = $builder->where('tiktok_products.status', $status);
         }
 
+        $summary = $this->productSummary($keyword, $status);
         $items = $builder->orderBy('tiktok_products.id', 'DESC')->paginate($pageSize, 'default', $page);
 
         return api_success('Success', [
@@ -56,6 +57,7 @@ class TiktokProductsController extends BaseController
                 'pageSize' => $pageSize,
                 'total' => $this->products->pager->getTotal(),
             ],
+            'summary' => $summary,
         ]);
     }
 
@@ -63,7 +65,7 @@ class TiktokProductsController extends BaseController
     {
         $product = $this->products
             ->select('tiktok_products.*, products.product_code, products.name AS warehouse_product_name')
-            ->join('products', 'products.id = tiktok_products.product_id', 'left')
+            ->join('products', 'products.id = tiktok_products.product_id AND products.deleted_at IS NULL', 'left')
             ->find($id);
 
         if (! $product) {
@@ -221,6 +223,38 @@ class TiktokProductsController extends BaseController
         return true;
     }
 
+    private function productSummary(string $keyword, string $status): array
+    {
+        $builder = $this->products->db->table('tiktok_products')
+            ->select("
+                COUNT(*) AS total_products,
+                COALESCE(SUM(CASE WHEN tiktok_products.status = 'active' THEN 1 ELSE 0 END), 0) AS active_products,
+                COALESCE(SUM(CASE WHEN tiktok_products.product_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS linked_products
+            ", false)
+            ->join('products', 'products.id = tiktok_products.product_id AND products.deleted_at IS NULL', 'left')
+            ->where('tiktok_products.deleted_at', null);
+
+        if ($keyword !== '') {
+            $builder->groupStart()
+                ->like('tiktok_products.name', $keyword)
+                ->orLike('tiktok_products.tiktok_product_id', $keyword)
+                ->orLike('products.product_code', $keyword)
+                ->groupEnd();
+        }
+
+        if ($status !== '') {
+            $builder->where('tiktok_products.status', $status);
+        }
+
+        $row = $builder->get()->getRowArray() ?? [];
+
+        return [
+            'total_products' => (int) ($row['total_products'] ?? 0),
+            'active_products' => (int) ($row['active_products'] ?? 0),
+            'linked_products' => (int) ($row['linked_products'] ?? 0),
+        ];
+    }
+
     private function validateSku(array $payload, ?int $id = null): bool
     {
         $uniqueRule = $id === null
@@ -249,7 +283,11 @@ class TiktokProductsController extends BaseController
             return null;
         }
 
-        $sku = $this->warehouseSkus->where('sku_code', $sellerSku)->first();
+        $sku = $this->warehouseSkus
+            ->join('products', 'products.id = product_skus.product_id')
+            ->where('products.deleted_at', null)
+            ->where('product_skus.sku_code', $sellerSku)
+            ->first();
 
         return $sku ? (int) $sku['id'] : null;
     }
@@ -257,8 +295,9 @@ class TiktokProductsController extends BaseController
     private function linkedSkus(int $tiktokProductId): array
     {
         return $this->skus
-            ->select('tiktok_skus.*, product_skus.sku_code AS warehouse_sku_code, product_skus.display_name AS warehouse_sku_name')
+            ->select('tiktok_skus.*, CASE WHEN products.id IS NULL THEN NULL ELSE product_skus.sku_code END AS warehouse_sku_code, CASE WHEN products.id IS NULL THEN NULL ELSE product_skus.display_name END AS warehouse_sku_name', false)
             ->join('product_skus', 'product_skus.id = tiktok_skus.product_sku_id', 'left')
+            ->join('products', 'products.id = product_skus.product_id AND products.deleted_at IS NULL', 'left')
             ->where('tiktok_skus.tiktok_product_id', $tiktokProductId)
             ->orderBy('tiktok_skus.id', 'DESC')
             ->findAll();

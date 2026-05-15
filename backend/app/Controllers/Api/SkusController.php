@@ -34,7 +34,6 @@ class SkusController extends BaseController
 
         $payload = $this->payload();
         $overwrite = $this->boolValue($payload['overwrite'] ?? false);
-        $forceUpdateCost = $this->boolValue($payload['force_update_cost'] ?? false);
         $skuPrefix = trim((string) ($payload['sku_prefix'] ?? $product['product_code']));
         $sizePrefix = trim((string) ($payload['size_prefix'] ?? ''));
         $comboPrefix = trim((string) ($payload['combo_prefix'] ?? ''));
@@ -111,12 +110,9 @@ class SkusController extends BaseController
                     $data = [
                         'combo_quantity' => $comboQuantity,
                         'suggested_cost' => $suggestedCost,
+                        'cost_price'     => $suggestedCost,
                         'display_name'   => $displayName,
                     ];
-
-                    if ($forceUpdateCost) {
-                        $data['cost_price'] = $suggestedCost;
-                    }
 
                     if ($this->canUseSkuCode($skuCode, (int) $existing['id'])) {
                         $data['sku_code'] = $skuCode;
@@ -198,6 +194,7 @@ class SkusController extends BaseController
             $builder = $builder->where('product_skus.is_active', $this->boolValue($isActive) ? 1 : 0);
         }
 
+        $summary = $this->skuSummary($productId, $keyword, $isSellable, $isActive);
         $items = $builder
             ->orderBy('size_options.sort_order', 'ASC')
             ->orderBy('product_skus.combo_quantity', 'ASC')
@@ -210,6 +207,7 @@ class SkusController extends BaseController
                 'pageSize' => $pageSize,
                 'total'    => $this->skus->pager->getTotal(),
             ],
+            'summary' => $summary,
         ]);
     }
 
@@ -224,7 +222,7 @@ class SkusController extends BaseController
         $payload = $this->payload();
         $errors = [];
 
-        foreach (['cost_price', 'sale_price'] as $field) {
+        foreach (['sale_price'] as $field) {
             if (array_key_exists($field, $payload) && (float) $payload[$field] < 0) {
                 $errors[$field] = 'The ' . $field . ' must be greater than or equal to 0.';
             }
@@ -236,11 +234,13 @@ class SkusController extends BaseController
 
         $data = [];
 
-        foreach (['cost_price', 'sale_price'] as $field) {
+        foreach (['sale_price'] as $field) {
             if (array_key_exists($field, $payload)) {
                 $data[$field] = $payload[$field];
             }
         }
+
+        $data['cost_price'] = (float) $sku['suggested_cost'];
 
         foreach (['is_sellable', 'is_active'] as $field) {
             if (array_key_exists($field, $payload)) {
@@ -271,6 +271,45 @@ class SkusController extends BaseController
         }
 
         return $query->countAllResults() === 0;
+    }
+
+    private function skuSummary(int $productId, string $keyword, mixed $isSellable, mixed $isActive): array
+    {
+        $builder = $this->skus->db->table('product_skus')
+            ->select("
+                COUNT(*) AS total_skus,
+                COALESCE(SUM(CASE WHEN product_skus.is_sellable = 1 THEN 1 ELSE 0 END), 0) AS sellable_skus,
+                COALESCE(SUM(CASE WHEN product_skus.is_active = 1 THEN 1 ELSE 0 END), 0) AS active_skus
+            ", false)
+            ->join('variant_options AS size_options', 'size_options.id = product_skus.size_option_id')
+            ->join('variant_options AS combo_options', 'combo_options.id = product_skus.combo_option_id')
+            ->where('product_skus.product_id', $productId)
+            ->where('product_skus.deleted_at', null);
+
+        if ($keyword !== '') {
+            $builder->groupStart()
+                ->like('product_skus.sku_code', $keyword)
+                ->orLike('product_skus.display_name', $keyword)
+                ->orLike('size_options.name', $keyword)
+                ->orLike('combo_options.name', $keyword)
+                ->groupEnd();
+        }
+
+        if ($isSellable !== null && $isSellable !== '') {
+            $builder->where('product_skus.is_sellable', $this->boolValue($isSellable) ? 1 : 0);
+        }
+
+        if ($isActive !== null && $isActive !== '') {
+            $builder->where('product_skus.is_active', $this->boolValue($isActive) ? 1 : 0);
+        }
+
+        $row = $builder->get()->getRowArray() ?? [];
+
+        return [
+            'total_skus' => (int) ($row['total_skus'] ?? 0),
+            'sellable_skus' => (int) ($row['sellable_skus'] ?? 0),
+            'active_skus' => (int) ($row['active_skus'] ?? 0),
+        ];
     }
 
     private function buildSkuCode(string $prefix, array $parts): string
@@ -338,7 +377,7 @@ class SkusController extends BaseController
             'combo_name'        => $comboName,
             'combo_quantity'    => (int) $sku['combo_quantity'],
             'suggested_cost'    => (float) $sku['suggested_cost'],
-            'cost_price'        => (float) $sku['cost_price'],
+            'cost_price'        => (float) $sku['suggested_cost'],
             'sale_price'        => (float) $sku['sale_price'],
             'is_sellable'       => (bool) $sku['is_sellable'],
             'is_active'         => (bool) $sku['is_active'],

@@ -14,6 +14,14 @@ class OrderModel extends Model
         'platform',
         'tiktok_order_id',
         'customer_name',
+        'customer_phone',
+        'customer_address',
+        'buyer_email',
+        'shipping_provider',
+        'payment_method_name',
+        'delivery_option_name',
+        'tiktok_status',
+        'tiktok_raw_json',
         'order_date',
         'status',
         'gross_amount',
@@ -34,4 +42,3 @@ class OrderModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 }
-

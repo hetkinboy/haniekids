@@ -33,173 +33,7 @@ import { productSelected, productsLoaded } from '../../store/product.actions';
     NzTableModule,
     NzTagModule,
   ],
-  template: `
-    <section class="app-shell space-y-4">
-      <div class="page-header">
-        <div>
-          <h1 class="m-0 text-2xl font-semibold text-slate-950">Sản phẩm kho gốc</h1>
-          <p class="m-0 mt-1 text-sm text-slate-500">Quản lý mặt hàng gốc, sau đó cấu hình Size/Combo và sinh SKU kho.</p>
-        </div>
-        @if (auth.isAdmin()) {
-          <button nz-button nzType="primary" (click)="openCreate()">
-            <span nz-icon nzType="plus"></span>
-            Thêm sản phẩm
-          </button>
-        }
-      </div>
-
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Tổng sản phẩm</div>
-          <div class="metric-value">{{ total() }}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Đang bán</div>
-          <div class="metric-value text-emerald-700">{{ activeCount() }}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Tạm dừng</div>
-          <div class="metric-value text-slate-600">{{ inactiveCount() }}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Quy tắc tồn kho</div>
-          <div class="mt-2 text-sm font-medium text-blue-700">Theo size</div>
-        </div>
-      </div>
-
-      <div class="surface p-3">
-        <form class="filter-bar" [formGroup]="filters" (ngSubmit)="load()">
-          <input nz-input class="!w-80" formControlName="keyword" placeholder="Tìm mã hoặc tên sản phẩm" />
-          <nz-select class="!w-40" formControlName="status" nzAllowClear nzPlaceHolder="Trạng thái">
-            <nz-option nzValue="active" nzLabel="Active" />
-            <nz-option nzValue="inactive" nzLabel="Inactive" />
-          </nz-select>
-          <button nz-button nzType="default" type="submit">
-            <span nz-icon nzType="reload"></span>
-            Lọc
-          </button>
-        </form>
-      </div>
-
-      <div class="data-table desktop-table surface">
-        <nz-table
-          [nzData]="products()"
-          [nzLoading]="loading()"
-          [nzPageIndex]="page()"
-          [nzPageSize]="pageSize()"
-          [nzTotal]="total()"
-          [nzFrontPagination]="false"
-          [nzScroll]="{ x: '920px' }"
-          (nzPageIndexChange)="page.set($event); load()"
-          (nzPageSizeChange)="pageSize.set($event); load()"
-        >
-          <thead>
-            <tr>
-              <th>Mã</th>
-              <th>Tên sản phẩm</th>
-              <th>Danh mục</th>
-              <th>Trạng thái</th>
-              <th nzRight class="w-[280px]">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (product of products(); track product.id) {
-              <tr>
-                <td class="font-semibold text-slate-900">{{ product.product_code }}</td>
-                <td>
-                  <div class="font-medium text-slate-900">{{ product.name }}</div>
-                  <div class="text-xs text-slate-500">{{ product.description || 'Chưa có mô tả' }}</div>
-                </td>
-                <td>{{ product.category || '-' }}</td>
-                <td>
-                  <nz-tag [nzColor]="product.status === 'active' ? 'green' : 'default'">{{ product.status }}</nz-tag>
-                </td>
-                <td nzRight>
-                  <div class="flex flex-wrap gap-2">
-                    <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'variants']">Biến thể</a>
-                    <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'skus']">SKU</a>
-                    @if (auth.isAdmin()) {
-                      <button nz-button nzSize="small" (click)="openEdit(product)">
-                        <span nz-icon nzType="edit"></span>
-                        Sửa
-                      </button>
-                      <button nz-button nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa sản phẩm này?" (nzOnConfirm)="delete(product.id)">
-                        Xóa
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </nz-table>
-      </div>
-
-      <div class="mobile-list">
-        @for (product of products(); track product.id) {
-          <article class="surface p-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="font-semibold text-slate-950">{{ product.product_code }}</div>
-                <div class="truncate text-sm text-slate-700">{{ product.name }}</div>
-                <div class="text-xs text-slate-500">{{ product.category || '-' }}</div>
-              </div>
-              <nz-tag [nzColor]="product.status === 'active' ? 'green' : 'default'">{{ product.status }}</nz-tag>
-            </div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'variants']">Biến thể</a>
-              <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'skus']">SKU</a>
-              @if (auth.isAdmin()) {
-                <button nz-button nzSize="small" (click)="openEdit(product)"><span nz-icon nzType="edit"></span> Sửa</button>
-              }
-            </div>
-          </article>
-        }
-      </div>
-    </section>
-
-    <nz-modal
-      [nzVisible]="modalVisible()"
-      [nzTitle]="editing() ? 'Sửa sản phẩm' : 'Thêm sản phẩm'"
-      nzOkText="Lưu"
-      nzCancelText="Hủy"
-      (nzOnCancel)="modalVisible.set(false)"
-      (nzOnOk)="save()"
-      [nzOkLoading]="saving()"
-    >
-      <ng-container *nzModalContent>
-        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="form">
-          <nz-form-item>
-            <nz-form-label nzRequired>Mã sản phẩm</nz-form-label>
-            <nz-form-control nzErrorTip="Nhập mã sản phẩm">
-              <input nz-input formControlName="product_code" placeholder="Ví dụ: SP001" />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label nzRequired>Tên sản phẩm</nz-form-label>
-            <nz-form-control nzErrorTip="Nhập tên sản phẩm">
-              <input nz-input formControlName="name" placeholder="Ví dụ: Áo thun cotton" />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Danh mục</nz-form-label>
-            <input nz-input formControlName="category" placeholder="Ví dụ: Thời trang" />
-          </nz-form-item>
-          <nz-form-item class="full-span">
-            <nz-form-label>Mô tả</nz-form-label>
-            <textarea nz-input rows="3" formControlName="description" placeholder="Ghi chú ngắn về sản phẩm"></textarea>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Trạng thái</nz-form-label>
-            <nz-select formControlName="status">
-              <nz-option nzValue="active" nzLabel="Active" />
-              <nz-option nzValue="inactive" nzLabel="Inactive" />
-            </nz-select>
-          </nz-form-item>
-        </form>
-      </ng-container>
-    </nz-modal>
-  `,
+  templateUrl: './product-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductListComponent implements OnInit {
@@ -212,13 +46,17 @@ export class ProductListComponent implements OnInit {
   readonly products = signal<Product[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
+  readonly copying = signal(false);
   readonly total = signal(0);
+  readonly summary = signal({ active_products: 0, inactive_products: 0 });
   readonly page = signal(1);
   readonly pageSize = signal(20);
   readonly modalVisible = signal(false);
+  readonly copyModalVisible = signal(false);
   readonly editing = signal<Product | null>(null);
-  readonly activeCount = computed(() => this.products().filter((product) => product.status === 'active').length);
-  readonly inactiveCount = computed(() => this.products().filter((product) => product.status !== 'active').length);
+  readonly copySource = signal<Product | null>(null);
+  readonly activeCount = computed(() => this.summary().active_products);
+  readonly inactiveCount = computed(() => this.summary().inactive_products);
 
   readonly filters = this.fb.nonNullable.group({
     keyword: [''],
@@ -226,6 +64,14 @@ export class ProductListComponent implements OnInit {
   });
 
   readonly form = this.fb.nonNullable.group({
+    product_code: ['', [Validators.required]],
+    name: ['', [Validators.required]],
+    category: [''],
+    description: [''],
+    status: ['active'],
+  });
+
+  readonly copyForm = this.fb.nonNullable.group({
     product_code: ['', [Validators.required]],
     name: ['', [Validators.required]],
     category: [''],
@@ -243,6 +89,10 @@ export class ProductListComponent implements OnInit {
       next: (response) => {
         this.products.set(response.data.items);
         this.total.set(response.data.pager.total);
+        this.summary.set({
+          active_products: response.data.summary?.active_products ?? 0,
+          inactive_products: response.data.summary?.inactive_products ?? 0,
+        });
         this.store.dispatch(productsLoaded({ products: response.data.items, total: response.data.pager.total }));
         this.loading.set(false);
       },
@@ -270,6 +120,18 @@ export class ProductListComponent implements OnInit {
       status: product.status,
     });
     this.modalVisible.set(true);
+  }
+
+  openCopy(product: Product): void {
+    this.copySource.set(product);
+    this.copyForm.reset({
+      product_code: this.suggestNextCode(product.product_code),
+      name: product.name,
+      category: product.category ?? '',
+      description: product.description ?? '',
+      status: 'active',
+    });
+    this.copyModalVisible.set(true);
   }
 
   save(): void {
@@ -306,5 +168,40 @@ export class ProductListComponent implements OnInit {
       },
       error: () => this.message.error('Không xóa được sản phẩm'),
     });
+  }
+
+  copyProduct(): void {
+    const source = this.copySource();
+    if (!source || this.copyForm.invalid) {
+      Object.values(this.copyForm.controls).forEach((control) => control.markAsDirty());
+      return;
+    }
+
+    this.copying.set(true);
+    this.api.copyProduct(source.id, this.copyForm.getRawValue() as Partial<Product>).subscribe({
+      next: () => {
+        this.message.success('Đã copy sản phẩm và biến thể');
+        this.copying.set(false);
+        this.copyModalVisible.set(false);
+        this.load();
+      },
+      error: () => {
+        this.message.error('Không copy được sản phẩm');
+        this.copying.set(false);
+      },
+    });
+  }
+
+  private suggestNextCode(code: string): string {
+    const match = code.match(/^(.*?)(\d+)$/);
+    if (!match) {
+      return `${code}-COPY`;
+    }
+
+    const prefix = match[1];
+    const number = match[2];
+    const next = String(Number(number) + 1).padStart(number.length, '0');
+
+    return `${prefix}${next}`;
   }
 }

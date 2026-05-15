@@ -1,0 +1,150 @@
+
+    <section class="app-shell space-y-5">
+      <div class="page-header">
+        <div>
+          <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Cấu hình shop</h1>
+          <p class="m-0 mt-1 text-sm text-slate-500">Hệ thống chỉ dùng 1 shop. Webhook phải khớp ID shop này mới được cập nhật dữ liệu.</p>
+        </div>
+        <button nz-button (click)="load()">
+          <span nz-icon nzType="reload"></span>
+          Tải lại
+        </button>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Shop đang cấu hình</div>
+          <div class="metric-value">{{ shop() ? 1 : 0 }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Trạng thái</div>
+          <div class="metric-value text-[#006a65]">{{ shop()?.status || '-' }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Webhook bị từ chối</div>
+          <div class="metric-value text-red-700">{{ rejectedEvents() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Chi phí vận hành</div>
+          <div class="mt-2 text-sm text-slate-600">Quản lý phí cố định và khoản chi theo ngày/tháng tại menu Chi phí vận hành.</div>
+        </div>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-[460px_1fr]">
+        <div class="surface p-5">
+          <h2 class="m-0 mb-4 text-xl font-semibold text-slate-950">Thông tin shop duy nhất</h2>
+          <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="save()">
+            <nz-form-item>
+              <nz-form-label nzRequired>Tên shop</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="shop_name" placeholder="Vi du: Tot Dep Official" />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzRequired>ID shop</nz-form-label>
+              <nz-form-control nzErrorTip="Nhap shop_id TikTok gui ve webhook">
+                <input nz-input formControlName="shop_id" placeholder="7495370608156969818" />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzRequired>Shop cipher</nz-form-label>
+              <nz-form-control nzErrorTip="Nhap shop_cipher">
+                <input nz-input formControlName="shop_cipher" />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzRequired>App key</nz-form-label>
+              <nz-form-control nzErrorTip="Nhap app_key">
+                <input nz-input formControlName="app_key" />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label [nzRequired]="!editing()">App secret</nz-form-label>
+              <nz-form-control>
+                <input nz-input type="password" formControlName="app_secret" [placeholder]="editing() ? 'De trong neu khong doi' : ''" />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label>Trạng thái</nz-form-label>
+              <nz-select formControlName="status">
+                <nz-option nzValue="active" nzLabel="Active" />
+                <nz-option nzValue="inactive" nzLabel="Inactive" />
+              </nz-select>
+            </nz-form-item>
+
+            <div class="flex flex-wrap gap-2">
+              <button nz-button nzType="primary" type="submit" [nzLoading]="saving()">
+                <span nz-icon nzType="save"></span>
+                Lưu cấu hình
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="surface">
+          <div class="flex items-center justify-between border-b border-slate-200 p-4">
+            <h2 class="m-0 text-lg font-semibold text-slate-950">Shop đang dùng</h2>
+            <span class="text-sm text-slate-500">Chỉ 1 shop được dùng để đối chiếu webhook</span>
+          </div>
+          <div class="grid gap-4 p-5 md:grid-cols-2">
+            <div>
+              <div class="text-xs font-semibold uppercase text-slate-500">Tên shop</div>
+              <div class="mt-1 font-semibold text-slate-950">{{ shop()?.shop_name || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-xs font-semibold uppercase text-slate-500">ID shop</div>
+              <div class="mt-1 font-semibold text-slate-950">{{ shop()?.shop_id || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-xs font-semibold uppercase text-slate-500">App key</div>
+              <div class="mt-1 text-slate-800">{{ shop()?.app_key || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-xs font-semibold uppercase text-slate-500">Trạng thái</div>
+              <div class="mt-1"><nz-tag [nzColor]="shop()?.status === 'active' ? 'green' : 'default'">{{ shop()?.status || '-' }}</nz-tag></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4">
+          <div>
+            <h2 class="m-0 text-lg font-semibold text-slate-950">Webhook gần đây</h2>
+            <p class="m-0 text-sm text-slate-500">Sự kiện rejected là webhook không khớp shop_id đã cấu hình.</p>
+          </div>
+          <nz-select class="!w-40" [ngModel]="eventStatus()" (ngModelChange)="eventStatus.set($event); loadEvents()" nzAllowClear nzPlaceHolder="Trang thai">
+            <nz-option nzValue="received" nzLabel="Received" />
+            <nz-option nzValue="processed" nzLabel="Processed" />
+            <nz-option nzValue="rejected" nzLabel="Rejected" />
+          </nz-select>
+        </div>
+        <nz-table [nzData]="events()" [nzLoading]="eventLoading()" [nzFrontPagination]="false" [nzScroll]="{ x: '1100px' }">
+          <thead>
+            <tr>
+              <th>Thoi gian</th>
+              <th>Shop ID</th>
+              <th>Loai</th>
+              <th>Order ID</th>
+              <th>Status</th>
+              <th>Xu ly</th>
+              <th>Loi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of events(); track event.id) {
+              <tr>
+                <td>{{ event.received_at }}</td>
+                <td>{{ event.shop_id || '-' }}</td>
+                <td>{{ event.event_type || '-' }}</td>
+                <td>{{ event.order_id || '-' }}</td>
+                <td>{{ event.order_status || '-' }}</td>
+                <td><nz-tag [nzColor]="statusColor(event.process_status)">{{ event.process_status }}</nz-tag></td>
+                <td>{{ event.error_message || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </section>
+  

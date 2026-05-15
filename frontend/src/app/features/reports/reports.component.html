@@ -1,0 +1,242 @@
+<section class="app-shell space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Báo cáo</h1>
+      <p class="m-0 mt-1 text-sm text-slate-500">
+        Theo dõi doanh thu, giá vốn, lợi nhuận, chi phí vận hành và tồn kho.
+      </p>
+    </div>
+    <button nz-button (click)="load()" [nzLoading]="loading()">
+      <span nz-icon nzType="reload"></span>
+      Tải lại
+    </button>
+  </div>
+
+  <div class="surface p-4">
+    <form class="filter-bar" [formGroup]="filters" (ngSubmit)="load()">
+      <div class="flex items-center gap-2 text-sm text-slate-600">
+        <span>Khoảng ngày</span>
+        <nz-select
+          class="!w-44"
+          formControlName="date_preset"
+          nzPlaceHolder="Chọn khoảng ngày"
+          (ngModelChange)="onDatePresetChange($event)"
+        >
+          @for (option of dateRangeOptions; track option.value) {
+            <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+          }
+        </nz-select>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-slate-600">
+        <span>Ngày</span>
+        <nz-range-picker
+          class="!w-72"
+          formControlName="date_range"
+          nzFormat="dd/MM/yyyy"
+          [nzAllowClear]="false"
+          (ngModelChange)="onDateRangeChange($event)"
+        />
+      </div>
+      <button nz-button type="submit" nzType="primary">
+        <span nz-icon nzType="reload"></span>
+        Xem báo cáo
+      </button>
+    </form>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">Số đơn</div>
+      <div class="metric-value">{{ overview()?.orders?.count || 0 }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tiền TikTok trả</div>
+      <div class="metric-value text-[#006a65]">
+        {{ overview()?.orders?.net_revenue || 0 | number: '1.0-0' }}
+      </div>
+      <div class="mt-2 text-xs text-slate-500">
+        Tổng doanh thu {{ overview()?.orders?.gross_amount || 0 | number: '1.0-0' }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Giá vốn</div>
+      <div class="metric-value">{{ overview()?.orders?.total_cost || 0 | number: '1.0-0' }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Lợi nhuận đơn</div>
+      <div
+        class="metric-value"
+        [class.text-red-700]="(overview()?.orders?.gross_profit || 0) < 0"
+        [class.text-emerald-700]="(overview()?.orders?.gross_profit || 0) >= 0"
+      >
+        {{ overview()?.orders?.gross_profit || 0 | number: '1.0-0' }}
+      </div>
+      <div class="mt-2 text-xs text-slate-500">
+        Biên lợi nhuận {{ profitMargin() | number: '1.0-1' }}%
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Chi phí vận hành</div>
+      <div class="metric-value text-orange-700">
+        {{ overview()?.operating_cost || 0 | number: '1.0-0' }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Lợi nhuận sau vận hành</div>
+      <div
+        class="metric-value"
+        [class.text-red-700]="(overview()?.net_profit_after_operating_cost || 0) < 0"
+        [class.text-emerald-700]="(overview()?.net_profit_after_operating_cost || 0) >= 0"
+      >
+        {{ overview()?.net_profit_after_operating_cost || 0 | number: '1.0-0' }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tồn có thể bán</div>
+      <div class="metric-value">
+        {{ overview()?.stock?.quantity_available || 0 | number: '1.0-0' }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Giá trị tồn</div>
+      <div class="metric-value">{{ overview()?.stock?.stock_value || 0 | number: '1.0-0' }}</div>
+    </div>
+  </div>
+
+  <div class="grid gap-5 xl:grid-cols-2">
+    <div class="surface p-4">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="m-0 text-lg font-semibold text-slate-950">Theo sản phẩm</h2>
+        <nz-tag nzColor="blue">{{ products().length }} sản phẩm</nz-tag>
+      </div>
+      <nz-table
+        [nzData]="products()"
+        [nzLoading]="loading()"
+        [nzFrontPagination]="false"
+        [nzScroll]="{ x: '780px', y: '420px' }"
+      >
+        <thead>
+          <tr>
+            <th>Sản phẩm</th>
+            <th>SL bán</th>
+            <th>Doanh thu</th>
+            <th>Giá vốn</th>
+            <th>Lợi nhuận</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of products(); track item.product_id) {
+            <tr>
+              <td>
+                <div class="font-semibold text-slate-950">{{ item.product_code }}</div>
+                <div class="max-w-[280px] truncate text-xs text-slate-500" [title]="item.product_name">
+                  {{ item.product_name }}
+                </div>
+              </td>
+              <td class="text-right">{{ item.quantity_sold }}</td>
+              <td class="text-right">{{ item.total_sale | number: '1.0-0' }}</td>
+              <td class="text-right">{{ item.total_cost | number: '1.0-0' }}</td>
+              <td
+                class="text-right font-semibold"
+                [class.text-red-700]="item.profit < 0"
+                [class.text-emerald-700]="item.profit >= 0"
+              >
+                {{ item.profit | number: '1.0-0' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+
+    <div class="surface p-4">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="m-0 text-lg font-semibold text-slate-950">Theo SKU</h2>
+        <nz-tag nzColor="purple">{{ skus().length }} SKU</nz-tag>
+      </div>
+      <nz-table
+        [nzData]="skus()"
+        [nzLoading]="loading()"
+        [nzFrontPagination]="false"
+        [nzScroll]="{ x: '820px', y: '420px' }"
+      >
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>SL bán</th>
+            <th>Doanh thu</th>
+            <th>Giá vốn</th>
+            <th>Lợi nhuận</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of skus(); track item.sku_id) {
+            <tr>
+              <td>
+                <div class="font-semibold text-slate-950">{{ item.sku_code }}</div>
+                <div class="max-w-[280px] truncate text-xs text-slate-500" [title]="item.sku_display_name">
+                  {{ item.sku_display_name }}
+                </div>
+              </td>
+              <td class="text-right">{{ item.quantity_sold }}</td>
+              <td class="text-right">{{ item.total_sale | number: '1.0-0' }}</td>
+              <td class="text-right">{{ item.total_cost | number: '1.0-0' }}</td>
+              <td
+                class="text-right font-semibold"
+                [class.text-red-700]="item.profit < 0"
+                [class.text-emerald-700]="item.profit >= 0"
+              >
+                {{ item.profit | number: '1.0-0' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+  </div>
+
+  <div class="surface p-4">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="m-0 text-lg font-semibold text-slate-950">Tồn kho theo size</h2>
+      <nz-tag nzColor="orange">{{ lowStock().length }} size sắp hết</nz-tag>
+    </div>
+    <nz-table
+      [nzData]="stock()"
+      [nzLoading]="loading()"
+      [nzFrontPagination]="false"
+      [nzScroll]="{ x: '980px', y: '460px' }"
+    >
+      <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Size</th>
+          <th>Tồn</th>
+          <th>Đã giữ</th>
+          <th>Có thể bán</th>
+          <th>Giá vốn TB</th>
+          <th>Giá trị tồn</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of stock(); track item.product_id + '-' + item.size_option_id) {
+          <tr>
+            <td>
+              <div class="font-semibold text-slate-950">{{ item.product_code }}</div>
+              <div class="max-w-[320px] truncate text-xs text-slate-500" [title]="item.product_name">
+                {{ item.product_name }}
+              </div>
+            </td>
+            <td>{{ item.size_name }}</td>
+            <td class="text-right">{{ item.quantity_on_hand }}</td>
+            <td class="text-right">{{ item.quantity_reserved }}</td>
+            <td class="text-right">
+              <nz-tag [nzColor]="item.quantity_available <= 5 ? 'red' : 'green'">{{ item.quantity_available }}</nz-tag>
+            </td>
+            <td class="text-right">{{ item.avg_cost | number: '1.0-0' }}</td>
+            <td class="text-right font-semibold">{{ item.stock_value | number: '1.0-0' }}</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+</section>

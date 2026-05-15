@@ -27,6 +27,17 @@ export interface Product {
 export interface ProductListData {
   items: Product[];
   pager: Pager;
+  summary?: {
+    total_products: number;
+    active_products: number;
+    inactive_products: number;
+  };
+}
+
+export interface ProductCopyResult {
+  product: Product;
+  groups_copied: number;
+  options_copied: number;
 }
 
 export interface VariantOption {
@@ -71,6 +82,11 @@ export interface ProductSku {
 export interface SkuListData {
   items: ProductSku[];
   pager: Pager;
+  summary?: {
+    total_skus: number;
+    sellable_skus: number;
+    active_skus: number;
+  };
 }
 
 export interface StockBySize {
@@ -123,6 +139,7 @@ export interface PurchaseImport {
   note?: string | null;
   created_at: string;
   updated_at: string;
+  can_edit?: boolean;
   items?: PurchaseImportItem[];
 }
 
@@ -141,6 +158,122 @@ export interface PurchaseImportItem {
 export interface PurchaseImportListData {
   items: PurchaseImport[];
   pager: Pager;
+  summary?: {
+    total_imports: number;
+    total_quantity: number;
+    total_amount: number;
+  };
+}
+
+export interface OperatingCost {
+  id: number;
+  cost_date: string;
+  cost_type: string;
+  amount: number;
+  allocation_type: string;
+  product_id?: number | null;
+  product_name?: string | null;
+  order_id?: number | null;
+  order_code?: string | null;
+  note?: string | null;
+}
+
+export interface OperatingCostListData {
+  items: OperatingCost[];
+  pager: Pager;
+  summary?: {
+    total_costs: number;
+    total_amount: number;
+  };
+}
+
+export interface OperatingFeeSetting {
+  id: number;
+  fee_key: string;
+  label: string;
+  value_type: 'percent' | 'fixed';
+  rate: number;
+  status: 'active' | 'inactive';
+}
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  sku_id: number;
+  sku_code: string;
+  sku_display_name: string;
+  size_option_id: number;
+  size_name?: string | null;
+  combo_option_id: number;
+  combo_name?: string | null;
+  combo_quantity: number;
+  quantity: number;
+  stock_quantity_deducted: number;
+  sale_price: number;
+  cost_price: number;
+  total_sale: number;
+  total_cost: number;
+  allocated_fee: number;
+  profit: number;
+}
+
+export interface Order {
+  id: number;
+  order_code: string;
+  platform: string;
+  tiktok_order_id?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_address?: string | null;
+  buyer_email?: string | null;
+  shipping_provider?: string | null;
+  payment_method_name?: string | null;
+  delivery_option_name?: string | null;
+  tiktok_status?: string | null;
+  tiktok_raw_json?: string | null;
+  order_date: string;
+  status: 'pending' | 'confirmed' | 'shipped' | 'completed' | 'cancelled' | 'returned';
+  gross_amount: number;
+  discount_amount: number;
+  platform_fee: number;
+  transaction_fee: number;
+  shipping_fee: number;
+  cod_amount: number;
+  net_revenue: number;
+  total_cost: number;
+  total_profit: number;
+  stock_deducted: number;
+  stock_returned: number;
+  return_fee: number;
+  note?: string | null;
+  profit_breakdown?: OrderProfitBreakdown;
+  items?: OrderItem[];
+}
+
+export interface OrderProfitBreakdown {
+  gross_amount: number;
+  customer_paid: number;
+  discount_amount: number;
+  platform_fee: number;
+  transaction_fee: number;
+  shipping_fee: number;
+  other_fee: number;
+  settlement_amount: number;
+  total_cost: number;
+  total_profit: number;
+}
+
+export interface OrderListData {
+  items: Order[];
+  pager: Pager;
+  summary?: {
+    total_orders: number;
+    net_revenue: number;
+    total_profit: number;
+    total_cost: number;
+    unmatched_orders: number;
+  };
 }
 
 export interface TiktokProduct {
@@ -173,6 +306,11 @@ export interface TiktokSku {
 export interface TiktokProductListData {
   items: TiktokProduct[];
   pager: Pager;
+  summary?: {
+    total_products: number;
+    active_products: number;
+    linked_products: number;
+  };
 }
 
 export interface TiktokImportResult {
@@ -183,4 +321,93 @@ export interface TiktokImportResult {
   skus_linked: number;
   skus_unmatched: number;
   items: unknown[];
+}
+
+export interface TiktokConnection {
+  id: number;
+  shop_name?: string | null;
+  shop_id: string;
+  shop_cipher: string;
+  app_key: string;
+  app_secret?: string | null;
+  base_url: string;
+  auth_base_url: string;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  access_token_expires_at?: string | null;
+  refresh_token_expires_at?: string | null;
+  status: 'active' | 'inactive';
+  last_synced_at?: string | null;
+  last_error?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface TiktokWebhookEvent {
+  id: number;
+  connection_id?: number | null;
+  shop_id?: string | null;
+  event_type?: string | null;
+  order_id?: string | null;
+  order_status?: string | null;
+  payload_json: string;
+  process_status: 'received' | 'processed' | 'rejected' | 'failed';
+  error_message?: string | null;
+  received_at: string;
+  processed_at?: string | null;
+}
+
+export interface ReportOverview {
+  date_from: string;
+  date_to: string;
+  orders: {
+    count: number;
+    gross_amount: number;
+    net_revenue: number;
+    total_cost: number;
+    gross_profit: number;
+  };
+  operating_cost: number;
+  net_profit_after_operating_cost: number;
+  stock: {
+    quantity_on_hand: number;
+    quantity_available: number;
+    stock_value: number;
+  };
+}
+
+export interface ReportProductRow {
+  product_id: number;
+  product_code: string;
+  product_name: string;
+  quantity_sold: number;
+  total_sale: number;
+  total_cost: number;
+  profit: number;
+}
+
+export interface ReportSkuRow {
+  sku_id: number;
+  sku_code: string;
+  sku_display_name: string;
+  size_name?: string | null;
+  combo_name?: string | null;
+  combo_quantity: number;
+  quantity_sold: number;
+  total_sale: number;
+  total_cost: number;
+  profit: number;
+}
+
+export interface ReportStockRow {
+  product_id: number;
+  product_code: string;
+  product_name: string;
+  size_option_id: number;
+  size_name: string;
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  quantity_available: number;
+  avg_cost: number;
+  stock_value: number;
 }

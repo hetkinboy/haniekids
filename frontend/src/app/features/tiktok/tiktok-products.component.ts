@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -29,335 +36,7 @@ import { ProductsApi } from '../../core/products/products.api';
     NzTableModule,
     NzTagModule,
   ],
-  template: `
-    <section class="app-shell space-y-5">
-      <div class="page-header">
-        <div>
-          <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Sản phẩm TikTok</h1>
-          <p class="m-0 mt-1 text-sm text-slate-500">Liên kết sản phẩm/SKU TikTok với SKU kho để lấy giá vốn, combo_quantity và tồn theo size.</p>
-        </div>
-        @if (auth.isAdmin()) {
-          <button nz-button (click)="openImportSearch()">
-            <span nz-icon nzType="import"></span>
-            Import từ search
-          </button>
-          <button nz-button nzType="primary" (click)="openCreateProduct()">
-            <span nz-icon nzType="plus"></span>
-            Thêm sản phẩm TikTok
-          </button>
-        }
-      </div>
-
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Tổng sản phẩm TikTok</div>
-          <div class="metric-value">{{ total() }}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Đang hoạt động</div>
-          <div class="metric-value text-[#006a65]">{{ activeCount() }}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Đã liên kết kho</div>
-          <div class="metric-value text-blue-700">{{ linkedCount() }}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">SKU TikTok đã tải</div>
-          <div class="metric-value text-emerald-700">{{ tiktokSkus().length }}</div>
-        </div>
-      </div>
-
-      <div class="surface p-4">
-        <form class="filter-bar" [formGroup]="filters" (ngSubmit)="load()">
-          <input nz-input class="!w-80" formControlName="keyword" placeholder="Tìm ID TikTok, tên sản phẩm, mã kho" />
-          <nz-select class="!w-44" formControlName="status" nzAllowClear nzPlaceHolder="Trạng thái">
-            <nz-option nzValue="active" nzLabel="Active" />
-            <nz-option nzValue="inactive" nzLabel="Inactive" />
-          </nz-select>
-          <button nz-button type="submit">
-            <span nz-icon nzType="reload"></span>
-            Lọc
-          </button>
-        </form>
-      </div>
-
-      <div class="space-y-5">
-        <div class="data-table surface">
-          <div class="flex flex-col gap-1 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 class="m-0 text-lg font-semibold text-slate-950">Danh sách sản phẩm TikTok</h2>
-              <p class="m-0 text-sm text-slate-500">Chọn một dòng để xem và quản lý SKU TikTok bên dưới.</p>
-            </div>
-            <div class="text-sm font-medium text-slate-600">{{ total() }} sản phẩm</div>
-          </div>
-          <nz-table
-            [nzData]="items()"
-            [nzLoading]="loading()"
-            [nzFrontPagination]="false"
-            [nzTotal]="total()"
-            [nzPageIndex]="page()"
-            [nzPageSize]="pageSize()"
-            [nzScroll]="{ x: '1020px' }"
-            (nzPageIndexChange)="page.set($event); load()"
-            (nzPageSizeChange)="pageSize.set($event); load()"
-          >
-            <thead>
-              <tr>
-                <th>ID TikTok</th>
-                <th>Sản phẩm TikTok</th>
-                <th>Sản phẩm kho</th>
-                <th>Shop</th>
-                <th>Trạng thái</th>
-                <th nzRight class="w-[220px]">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of items(); track item.id) {
-                <tr [class.bg-teal-50]="selectedProduct()?.id === item.id">
-                  <td class="font-semibold text-slate-950">{{ item.tiktok_product_id }}</td>
-                  <td>
-                    <div class="font-medium text-slate-950">{{ item.name }}</div>
-                    <div class="text-xs text-slate-500">#{{ item.id }}</div>
-                  </td>
-                  <td>
-                    @if (item.product_id) {
-                      <div class="font-medium">{{ item.product_code }}</div>
-                      <div class="text-xs text-slate-500">{{ item.warehouse_product_name }}</div>
-                    } @else {
-                      <nz-tag nzColor="orange">Chưa liên kết</nz-tag>
-                    }
-                  </td>
-                  <td>{{ item.shop_name || '-' }}</td>
-                  <td><nz-tag [nzColor]="item.status === 'active' ? 'green' : 'default'">{{ item.status }}</nz-tag></td>
-                  <td nzRight>
-                    <div class="flex flex-wrap gap-2">
-                      <button nz-button nzSize="small" (click)="selectProduct(item)">
-                        <span nz-icon nzType="eye"></span>
-                        Xem SKU
-                      </button>
-                      @if (auth.isAdmin()) {
-                        <button nz-button nzSize="small" (click)="openEditProduct(item)">
-                          <span nz-icon nzType="edit"></span>
-                          Sửa
-                        </button>
-                        <button nz-button nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa sản phẩm TikTok này?" (nzOnConfirm)="deleteProduct(item.id)">
-                          Xóa
-                        </button>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </nz-table>
-        </div>
-
-        <div class="surface p-5">
-          <div class="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <h2 class="m-0 text-xl font-semibold text-slate-950">SKU TikTok</h2>
-              <p class="m-0 mt-1 text-sm text-slate-500">
-                @if (selectedProduct()) {
-                  Đang quản lý: {{ selectedProduct()?.name }}
-                } @else {
-                  Chọn một sản phẩm TikTok để quản lý SKU.
-                }
-              </p>
-            </div>
-            @if (auth.isAdmin() && selectedProduct()) {
-              <button nz-button nzType="primary" (click)="openCreateSku()">
-                <span nz-icon nzType="plus"></span>
-                Thêm SKU
-              </button>
-            }
-          </div>
-
-          @if (selectedProduct()) {
-            <div class="mb-4 grid gap-3 md:grid-cols-3">
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div class="text-xs font-semibold uppercase text-slate-500">ID TikTok</div>
-                <div class="mt-1 font-semibold text-slate-950">{{ selectedProduct()?.tiktok_product_id }}</div>
-              </div>
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div class="text-xs font-semibold uppercase text-slate-500">Sản phẩm kho</div>
-                <div class="mt-1 font-semibold text-slate-950">{{ selectedProduct()?.product_code || 'Chưa liên kết' }}</div>
-                <div class="text-xs text-slate-500">{{ selectedProduct()?.warehouse_product_name || '' }}</div>
-              </div>
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div class="text-xs font-semibold uppercase text-slate-500">Số SKU</div>
-                <div class="mt-1 font-semibold text-slate-950">{{ tiktokSkus().length }}</div>
-              </div>
-            </div>
-            <div class="data-table">
-              <nz-table nzSize="small" [nzData]="tiktokSkus()" [nzLoading]="skuLoading()" [nzFrontPagination]="false" [nzScroll]="{ x: '980px' }">
-                <thead>
-                  <tr>
-                    <th>ID SKU TikTok</th>
-                    <th>Seller SKU</th>
-                    <th>SKU kho</th>
-                    <th>Giá / Tồn TikTok</th>
-                    <th>Trạng thái</th>
-                    @if (auth.isAdmin()) {
-                      <th class="w-[150px]">Thao tác</th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (sku of tiktokSkus(); track sku.id) {
-                    <tr>
-                      <td>
-                        <div class="font-medium">{{ sku.tiktok_sku_id }}</div>
-                        <div class="text-xs text-slate-500">{{ sku.name || '-' }}</div>
-                      </td>
-                      <td>{{ sku.seller_sku || '-' }}</td>
-                      <td>
-                        @if (sku.product_sku_id) {
-                          <div class="font-medium">{{ sku.warehouse_sku_code }}</div>
-                          <div class="text-xs text-slate-500">{{ sku.warehouse_sku_name }}</div>
-                        } @else {
-                          <nz-tag nzColor="orange">Chưa liên kết</nz-tag>
-                        }
-                      </td>
-                      <td>
-                        <div class="font-medium">{{ sku.tiktok_price || 0 }}</div>
-                        <div class="text-xs text-slate-500">Tồn TikTok: {{ sku.tiktok_inventory_quantity || 0 }}</div>
-                      </td>
-                      <td><nz-tag [nzColor]="sku.status === 'active' ? 'green' : 'default'">{{ sku.status }}</nz-tag></td>
-                      @if (auth.isAdmin()) {
-                        <td>
-                          <button nz-button nzSize="small" (click)="openEditSku(sku)">
-                            <span nz-icon nzType="edit"></span>
-                          </button>
-                          <button nz-button nzDanger nzSize="small" class="ml-2" nz-popconfirm nzPopconfirmTitle="Xóa SKU TikTok này?" (nzOnConfirm)="deleteSku(sku.id)">
-                            Xóa
-                          </button>
-                        </td>
-                      }
-                    </tr>
-                  }
-                </tbody>
-              </nz-table>
-            </div>
-          } @else {
-            <div class="rounded-lg bg-slate-100 p-4 text-sm text-slate-600">Danh sách SKU TikTok sẽ hiển thị ở đây sau khi chọn sản phẩm.</div>
-          }
-        </div>
-      </div>
-    </section>
-
-    <nz-modal
-      [nzVisible]="importModalVisible()"
-      nzTitle="Import từ link search TikTok"
-      nzOkText="Import"
-      nzCancelText="Hủy"
-      [nzOkLoading]="importing()"
-      (nzOnCancel)="importModalVisible.set(false)"
-      (nzOnOk)="importSearchResponse()"
-      nzWidth="920px"
-    >
-      <ng-container *nzModalContent>
-        <form nz-form nzLayout="vertical" [formGroup]="importForm">
-          <nz-form-item>
-            <nz-form-label nzRequired>Link API search TikTok</nz-form-label>
-            <nz-form-control nzErrorTip="Nhập link API search TikTok">
-              <input
-                nz-input
-                formControlName="url"
-                placeholder="Ví dụ: https://shopapi.totdep.com/api/tiktok/productsearch"
-              />
-            </nz-form-control>
-          </nz-form-item>
-        </form>
-        <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-          Backend sẽ gọi link này, đọc JSON trả về, lấy product.id làm ID sản phẩm TikTok, sku.id làm ID SKU TikTok và tự liên kết nếu seller_sku trùng mã SKU kho.
-        </div>
-      </ng-container>
-    </nz-modal>
-
-    <nz-modal
-      [nzVisible]="productModalVisible()"
-      [nzTitle]="editingProduct() ? 'Sửa sản phẩm TikTok' : 'Thêm sản phẩm TikTok'"
-      nzOkText="Lưu"
-      nzCancelText="Hủy"
-      [nzOkLoading]="saving()"
-      (nzOnCancel)="productModalVisible.set(false)"
-      (nzOnOk)="saveProduct()"
-      nzWidth="720px"
-    >
-      <ng-container *nzModalContent>
-        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="productForm">
-          <nz-form-item>
-            <nz-form-label nzRequired>ID sản phẩm TikTok</nz-form-label>
-            <nz-form-control nzErrorTip="Nhập ID sản phẩm TikTok">
-              <input nz-input formControlName="tiktok_product_id" placeholder="Ví dụ: 1729384756" />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label nzRequired>Tên sản phẩm TikTok</nz-form-label>
-            <nz-form-control nzErrorTip="Nhập tên sản phẩm">
-              <input nz-input formControlName="name" placeholder="Tên hiển thị trên TikTok Shop" />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Sản phẩm kho liên kết</nz-form-label>
-            <nz-select formControlName="product_id" nzAllowClear nzShowSearch nzPlaceHolder="Chọn sản phẩm kho">
-              @for (product of warehouseProducts(); track product.id) {
-                <nz-option [nzValue]="product.id" [nzLabel]="product.product_code + ' - ' + product.name" />
-              }
-            </nz-select>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Tên shop</nz-form-label>
-            <input nz-input formControlName="shop_name" placeholder="Tên shop TikTok" />
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Trạng thái</nz-form-label>
-            <nz-select formControlName="status">
-              <nz-option nzValue="active" nzLabel="Active" />
-              <nz-option nzValue="inactive" nzLabel="Inactive" />
-            </nz-select>
-          </nz-form-item>
-        </form>
-      </ng-container>
-    </nz-modal>
-
-    <nz-modal
-      [nzVisible]="skuModalVisible()"
-      [nzTitle]="editingSku() ? 'Sửa SKU TikTok' : 'Thêm SKU TikTok'"
-      nzOkText="Lưu"
-      nzCancelText="Hủy"
-      [nzOkLoading]="saving()"
-      (nzOnCancel)="skuModalVisible.set(false)"
-      (nzOnOk)="saveSku()"
-      nzWidth="760px"
-    >
-      <ng-container *nzModalContent>
-        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="skuForm">
-          <nz-form-item>
-            <nz-form-label nzRequired>ID SKU TikTok</nz-form-label>
-            <nz-form-control nzErrorTip="Nhập ID SKU TikTok">
-              <input nz-input formControlName="tiktok_sku_id" placeholder="Ví dụ: TT_SKU_123" />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Seller SKU</nz-form-label>
-            <input nz-input formControlName="seller_sku" placeholder="Mã seller SKU trên TikTok" />
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Tên SKU TikTok</nz-form-label>
-            <input nz-input formControlName="name" placeholder="Tên biến thể trên TikTok" />
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>Trạng thái</nz-form-label>
-            <nz-select formControlName="status">
-              <nz-option nzValue="active" nzLabel="Active" />
-              <nz-option nzValue="inactive" nzLabel="Inactive" />
-            </nz-select>
-          </nz-form-item>
-        </form>
-      </ng-container>
-    </nz-modal>
-  `,
+  templateUrl: './tiktok-products.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TiktokProductsComponent implements OnInit {
@@ -377,13 +56,14 @@ export class TiktokProductsComponent implements OnInit {
   readonly saving = signal(false);
   readonly importing = signal(false);
   readonly total = signal(0);
+  readonly summary = signal({ active_products: 0, linked_products: 0 });
   readonly page = signal(1);
   readonly pageSize = signal(20);
   readonly productModalVisible = signal(false);
   readonly skuModalVisible = signal(false);
   readonly importModalVisible = signal(false);
-  readonly activeCount = computed(() => this.items().filter((item) => item.status === 'active').length);
-  readonly linkedCount = computed(() => this.items().filter((item) => item.product_id).length);
+  readonly activeCount = computed(() => this.summary().active_products);
+  readonly linkedCount = computed(() => this.summary().linked_products);
 
   readonly filters = this.fb.nonNullable.group({
     keyword: [''],
@@ -404,6 +84,8 @@ export class TiktokProductsComponent implements OnInit {
     name: [''],
     status: ['active'],
   });
+  // http://localhost:8080/api/tiktok/connections/1/refresh-token
+
   readonly importForm = this.fb.nonNullable.group({
     url: ['https://shopapi.totdep.com/api/tiktok/productsearch', Validators.required],
   });
@@ -415,22 +97,32 @@ export class TiktokProductsComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.api.tiktokProducts({ ...this.filters.getRawValue(), page: this.page(), pageSize: this.pageSize() }).subscribe({
-      next: (response) => {
-        this.items.set(response.data.items);
-        this.total.set(response.data.pager.total);
-        this.loading.set(false);
-        const selected = this.selectedProduct();
-        if (selected) {
-          const fresh = response.data.items.find((item) => item.id === selected.id) ?? null;
-          this.selectedProduct.set(fresh);
-        }
-      },
-      error: () => {
-        this.loading.set(false);
-        this.message.error('Không tải được sản phẩm TikTok');
-      },
-    });
+    this.api
+      .tiktokProducts({
+        ...this.filters.getRawValue(),
+        page: this.page(),
+        pageSize: this.pageSize(),
+      })
+      .subscribe({
+        next: (response) => {
+          this.items.set(response.data.items);
+          this.total.set(response.data.pager.total);
+          this.summary.set({
+            active_products: response.data.summary?.active_products ?? 0,
+            linked_products: response.data.summary?.linked_products ?? 0,
+          });
+          this.loading.set(false);
+          const selected = this.selectedProduct();
+          if (selected) {
+            const fresh = response.data.items.find((item) => item.id === selected.id) ?? null;
+            this.selectedProduct.set(fresh);
+          }
+        },
+        error: () => {
+          this.loading.set(false);
+          this.message.error('Không tải được sản phẩm TikTok');
+        },
+      });
   }
 
   selectProduct(product: TiktokProduct): void {
@@ -440,7 +132,13 @@ export class TiktokProductsComponent implements OnInit {
 
   openCreateProduct(): void {
     this.editingProduct.set(null);
-    this.productForm.reset({ product_id: 0, tiktok_product_id: '', name: '', shop_name: '', status: 'active' });
+    this.productForm.reset({
+      product_id: 0,
+      tiktok_product_id: '',
+      name: '',
+      shop_name: '',
+      status: 'active',
+    });
     this.productModalVisible.set(true);
   }
 
@@ -471,7 +169,9 @@ export class TiktokProductsComponent implements OnInit {
       status: form.status as 'active' | 'inactive',
     };
     const editing = this.editingProduct();
-    const request = editing ? this.api.updateTiktokProduct(editing.id, payload) : this.api.createTiktokProduct(payload);
+    const request = editing
+      ? this.api.updateTiktokProduct(editing.id, payload)
+      : this.api.createTiktokProduct(payload);
 
     this.saving.set(true);
     request.subscribe({
@@ -503,6 +203,8 @@ export class TiktokProductsComponent implements OnInit {
   }
 
   openImportSearch(): void {
+    // http://localhost:8080/api/tiktok/connections/1/refresh-token
+
     this.importForm.reset({ url: 'https://shopapi.totdep.com/api/tiktok/productsearch' });
     this.importModalVisible.set(true);
   }
@@ -518,7 +220,9 @@ export class TiktokProductsComponent implements OnInit {
       next: (response) => {
         this.importing.set(false);
         this.importModalVisible.set(false);
-        this.message.success(`Đã import ${response.data.skus_created + response.data.skus_updated} SKU TikTok, liên kết ${response.data.skus_linked} SKU kho`);
+        this.message.success(
+          `Đã import ${response.data.skus_created + response.data.skus_updated} SKU TikTok, liên kết ${response.data.skus_linked} SKU kho`,
+        );
         this.load();
         const selected = this.selectedProduct();
         if (selected) {
@@ -564,7 +268,9 @@ export class TiktokProductsComponent implements OnInit {
       status: form.status as 'active' | 'inactive',
     };
     const editing = this.editingSku();
-    const request = editing ? this.api.updateTiktokSku(editing.id, payload) : this.api.createTiktokSku(product.id, payload);
+    const request = editing
+      ? this.api.updateTiktokSku(editing.id, payload)
+      : this.api.createTiktokSku(product.id, payload);
 
     this.saving.set(true);
     request.subscribe({
@@ -616,5 +322,4 @@ export class TiktokProductsComponent implements OnInit {
       },
     });
   }
-
 }

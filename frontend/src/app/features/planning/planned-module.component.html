@@ -1,0 +1,70 @@
+
+    <section class="app-shell space-y-6">
+      <div class="page-header">
+        <div>
+          <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">{{ plan().title }}</h1>
+          <p class="m-0 mt-1 text-sm text-slate-500">{{ plan().subtitle }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a nz-button routerLink="/dashboard">Dashboard</a>
+          <button nz-button nzType="primary" disabled>
+            <span nz-icon nzType="plus"></span>
+            Thêm mới
+          </button>
+        </div>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+        <div class="metric-card">
+          <div class="metric-label">Trạng thái backend</div>
+          <div class="mt-3"><nz-tag [nzColor]="plan().backendReady ? 'green' : 'orange'">{{ plan().backendReady ? 'Sẵn sàng' : 'Cần bổ sung' }}</nz-tag></div>
+          <div class="mt-3 text-sm text-slate-600">{{ plan().backendStatus }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ưu tiên</div>
+          <div class="metric-value text-[#006a65]">MVP</div>
+          <div class="mt-2 text-xs text-slate-500">Backend đã sẵn sàng, bước tiếp theo là nối UI thật.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ngữ cảnh nghiệp vụ</div>
+          <div class="mt-3 text-sm font-medium text-slate-800">Không tạo tồn kho theo combo. Đơn combo trừ kho theo size.</div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div class="surface p-5">
+          <h2 class="m-0 mb-4 text-xl font-semibold text-slate-950">Kế hoạch backend cần viết</h2>
+          <div class="space-y-3">
+            @for (item of plan().apiPlan; track item) {
+              <div class="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">{{ item }}</div>
+            }
+          </div>
+        </div>
+
+        <div class="surface p-5">
+          <h2 class="m-0 mb-4 text-xl font-semibold text-slate-950">Giao diện dự kiến</h2>
+          <div class="status-note mb-4">Bảng bên dưới là layout giao diện theo Stitch. Nút tạo/sửa sẽ bật sau khi API thật được thêm.</div>
+          <div class="data-table">
+            <nz-table [nzData]="previewRows" [nzFrontPagination]="false" [nzScroll]="{ x: '760px' }">
+              <thead>
+                <tr>
+                  @for (column of plan().columns; track column) {
+                    <th>{{ column }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of previewRows; track row.id) {
+                  <tr>
+                    @for (column of plan().columns; track column) {
+                      <td>{{ row.value }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </div>
+        </div>
+      </div>
+    </section>
+  

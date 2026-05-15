@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\OrderProfitCalculator;
 use App\Models\OrderItemModel;
 use App\Models\OrderModel;
 use App\Models\ProductSkuModel;
@@ -17,6 +18,7 @@ class OrdersController extends BaseController
     private ProductSkuModel $skus;
     private StockBySizeModel $stock;
     private StockMovementModel $movements;
+    private OrderProfitCalculator $profitCalculator;
 
     public function __construct()
     {
@@ -25,6 +27,7 @@ class OrdersController extends BaseController
         $this->skus = new ProductSkuModel();
         $this->stock = new StockBySizeModel();
         $this->movements = new StockMovementModel();
+        $this->profitCalculator = new OrderProfitCalculator();
     }
 
     public function index(): ResponseInterface
@@ -32,6 +35,8 @@ class OrdersController extends BaseController
         $keyword = trim((string) $this->request->getGet('keyword'));
         $status = trim((string) $this->request->getGet('status'));
         $platform = trim((string) $this->request->getGet('platform'));
+        $dateFrom = trim((string) $this->request->getGet('date_from'));
+        $dateTo = trim((string) $this->request->getGet('date_to'));
         $page = max(1, (int) ($this->request->getGet('page') ?? 1));
         $pageSize = min(100, max(1, (int) ($this->request->getGet('pageSize') ?? 20)));
 
@@ -53,7 +58,19 @@ class OrdersController extends BaseController
             $builder = $builder->where('platform', $platform);
         }
 
-        $orders = $builder->orderBy('id', 'DESC')->paginate($pageSize, 'default', $page);
+        if ($dateFrom !== '') {
+            $builder = $builder->where('order_date >=', $dateFrom . ' 00:00:00');
+        }
+
+        if ($dateTo !== '') {
+            $builder = $builder->where('order_date <=', $dateTo . ' 23:59:59');
+        }
+
+        $summary = $this->orderSummary($keyword, $status, $platform, $dateFrom, $dateTo);
+        $orders = $builder
+            ->orderBy('order_date', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->paginate($pageSize, 'default', $page);
 
         return api_success('Success', [
             'items' => array_map(fn (array $order): array => $this->formatOrder($order), $orders),
@@ -62,6 +79,7 @@ class OrdersController extends BaseController
                 'pageSize' => $pageSize,
                 'total' => $this->orders->pager->getTotal(),
             ],
+            'summary' => $summary,
         ]);
     }
 
@@ -93,11 +111,7 @@ class OrdersController extends BaseController
             $orderCode = 'ORD-' . date('Ymd-His');
         }
 
-        $platformFee = (float) ($payload['platform_fee'] ?? 0);
-        $transactionFee = (float) ($payload['transaction_fee'] ?? 0);
-        $shippingFee = (float) ($payload['shipping_fee'] ?? 0);
         $discountAmount = (float) ($payload['discount_amount'] ?? 0);
-        $returnFee = (float) ($payload['return_fee'] ?? 0);
         $shouldDeductStock = ! in_array($payload['status'] ?? 'pending', ['cancelled', 'returned'], true);
 
         $grossAmount = 0.0;
@@ -114,16 +128,16 @@ class OrdersController extends BaseController
             'status' => $payload['status'] ?? 'pending',
             'gross_amount' => 0,
             'discount_amount' => $discountAmount,
-            'platform_fee' => $platformFee,
-            'transaction_fee' => $transactionFee,
-            'shipping_fee' => $shippingFee,
+            'platform_fee' => 0,
+            'transaction_fee' => 0,
+            'shipping_fee' => 0,
             'cod_amount' => (float) ($payload['cod_amount'] ?? 0),
             'net_revenue' => 0,
             'total_cost' => 0,
             'total_profit' => 0,
             'stock_deducted' => $shouldDeductStock ? 1 : 0,
             'stock_returned' => 0,
-            'return_fee' => $returnFee,
+            'return_fee' => 0,
             'note' => $payload['note'] ?? null,
         ], true);
 
@@ -131,7 +145,7 @@ class OrdersController extends BaseController
             $sku = $this->skus->find((int) $line['sku_id']);
             $quantity = (int) $line['quantity'];
             $salePrice = array_key_exists('sale_price', $line) ? (float) $line['sale_price'] : (float) $sku['sale_price'];
-            $costPrice = array_key_exists('cost_price', $line) ? (float) $line['cost_price'] : (float) $sku['cost_price'];
+            $costPrice = (float) ($sku['suggested_cost'] ?? $sku['cost_price']);
             $stockQty = $quantity * (int) $sku['combo_quantity'];
             $totalSale = $quantity * $salePrice;
             $lineCost = $quantity * $costPrice;
@@ -186,15 +200,19 @@ class OrdersController extends BaseController
             }
         }
 
-        $totalFee = $platformFee + $transactionFee + $shippingFee + $returnFee;
-        $netRevenue = $grossAmount - $discountAmount - $totalFee;
-        $totalProfit = $netRevenue - $totalCost;
+        $customerPaid = (float) ($payload['cod_amount'] ?? ($grossAmount - $discountAmount));
+        $profit = $this->profitCalculator->profit($grossAmount, $customerPaid, $totalCost);
 
         $this->orders->update($orderId, [
             'gross_amount' => $grossAmount,
-            'net_revenue' => $netRevenue,
+            'platform_fee' => $profit['platform_fee'],
+            'transaction_fee' => $profit['transaction_fee'],
+            'shipping_fee' => $profit['shipping_fee'],
+            'return_fee' => $profit['return_fee'],
+            'cod_amount' => $customerPaid,
+            'net_revenue' => $profit['net_revenue'],
             'total_cost' => $totalCost,
-            'total_profit' => $totalProfit,
+            'total_profit' => $profit['total_profit'],
         ]);
 
         $this->orders->db->transComplete();
@@ -275,6 +293,52 @@ class OrdersController extends BaseController
         return $errors;
     }
 
+    private function orderSummary(string $keyword, string $status, string $platform, string $dateFrom, string $dateTo): array
+    {
+        $builder = $this->orders->db->table('orders')
+            ->select("
+                COUNT(*) AS total_orders,
+                COALESCE(SUM(CASE WHEN status NOT IN ('cancelled', 'returned') THEN net_revenue ELSE 0 END), 0) AS net_revenue,
+                COALESCE(SUM(CASE WHEN status NOT IN ('cancelled', 'returned') THEN total_profit ELSE 0 END), 0) AS total_profit,
+                COALESCE(SUM(CASE WHEN status NOT IN ('cancelled', 'returned') THEN total_cost ELSE 0 END), 0) AS total_cost,
+                COALESCE(SUM(CASE WHEN status NOT IN ('cancelled', 'returned') AND total_cost <= 0 THEN 1 ELSE 0 END), 0) AS unmatched_orders
+            ", false);
+
+        if ($keyword !== '') {
+            $builder->groupStart()
+                ->like('order_code', $keyword)
+                ->orLike('tiktok_order_id', $keyword)
+                ->orLike('customer_name', $keyword)
+                ->groupEnd();
+        }
+
+        if ($status !== '') {
+            $builder->where('status', $status);
+        }
+
+        if ($platform !== '') {
+            $builder->where('platform', $platform);
+        }
+
+        if ($dateFrom !== '') {
+            $builder->where('order_date >=', $dateFrom . ' 00:00:00');
+        }
+
+        if ($dateTo !== '') {
+            $builder->where('order_date <=', $dateTo . ' 23:59:59');
+        }
+
+        $row = $builder->get()->getRowArray() ?? [];
+
+        return [
+            'total_orders' => (int) ($row['total_orders'] ?? 0),
+            'net_revenue' => (float) ($row['net_revenue'] ?? 0),
+            'total_profit' => (float) ($row['total_profit'] ?? 0),
+            'total_cost' => (float) ($row['total_cost'] ?? 0),
+            'unmatched_orders' => (int) ($row['unmatched_orders'] ?? 0),
+        ];
+    }
+
     private function returnStock(array $order): void
     {
         $items = $this->items->where('order_id', (int) $order['id'])->findAll();
@@ -314,12 +378,29 @@ class OrdersController extends BaseController
     private function formatOrder(array $order): array
     {
         foreach (['id', 'stock_deducted', 'stock_returned'] as $field) {
-            $order[$field] = (int) $order[$field];
+            if (isset($order[$field])) {
+                $order[$field] = (int) $order[$field];
+            }
         }
 
         foreach (['gross_amount', 'discount_amount', 'platform_fee', 'transaction_fee', 'shipping_fee', 'cod_amount', 'net_revenue', 'total_cost', 'total_profit', 'return_fee'] as $field) {
-            $order[$field] = (float) $order[$field];
+            if (isset($order[$field])) {
+                $order[$field] = (float) $order[$field];
+            }
         }
+
+        $order['profit_breakdown'] = [
+            'gross_amount' => (float) ($order['gross_amount'] ?? 0),
+            'customer_paid' => (float) ($order['cod_amount'] ?? 0),
+            'discount_amount' => (float) ($order['discount_amount'] ?? 0),
+            'platform_fee' => (float) ($order['platform_fee'] ?? 0),
+            'transaction_fee' => (float) ($order['transaction_fee'] ?? 0),
+            'shipping_fee' => (float) ($order['shipping_fee'] ?? 0),
+            'other_fee' => (float) ($order['return_fee'] ?? 0),
+            'settlement_amount' => (float) ($order['net_revenue'] ?? 0),
+            'total_cost' => (float) ($order['total_cost'] ?? 0),
+            'total_profit' => (float) ($order['total_profit'] ?? 0),
+        ];
 
         return $order;
     }

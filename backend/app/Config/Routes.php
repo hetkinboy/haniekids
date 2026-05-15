@@ -17,6 +17,7 @@ $routes->group('api', static function ($routes) {
     $routes->get('products', 'Api\ProductsController::index', ['filter' => 'auth']);
     $routes->get('products/(:num)', 'Api\ProductsController::show/$1', ['filter' => 'auth']);
     $routes->post('products', 'Api\ProductsController::create', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('products/(:num)/copy', 'Api\ProductsController::copy/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->put('products/(:num)', 'Api\ProductsController::update/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->delete('products/(:num)', 'Api\ProductsController::delete/$1', ['filter' => ['auth', 'role:admin']]);
 
@@ -36,10 +37,12 @@ $routes->group('api', static function ($routes) {
     $routes->get('products/(:num)/stock', 'Api\StockController::productStock/$1', ['filter' => 'auth']);
     $routes->get('stock/movements', 'Api\StockController::movements', ['filter' => 'auth']);
     $routes->post('stock/adjust', 'Api\StockController::adjust', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('stock/import-legacy-1bo', 'Api\StockController::importLegacyOneBoStock', ['filter' => ['auth', 'role:admin']]);
 
     $routes->get('purchase-imports', 'Api\PurchaseImportsController::index', ['filter' => 'auth']);
     $routes->post('purchase-imports', 'Api\PurchaseImportsController::create', ['filter' => ['auth', 'role:admin']]);
     $routes->get('purchase-imports/(:num)', 'Api\PurchaseImportsController::show/$1', ['filter' => 'auth']);
+    $routes->put('purchase-imports/(:num)', 'Api\PurchaseImportsController::update/$1', ['filter' => ['auth', 'role:admin']]);
 
     $routes->get('tiktok-products', 'Api\TiktokProductsController::index', ['filter' => 'auth']);
     $routes->post('tiktok-products', 'Api\TiktokProductsController::create', ['filter' => ['auth', 'role:admin']]);
@@ -58,10 +61,16 @@ $routes->group('api', static function ($routes) {
     $routes->post('tiktok/connections/(:num)/refresh-token', 'Api\TiktokIntegrationController::refreshToken/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->get('tiktok/authorized-shops', 'Api\TiktokIntegrationController::authorizedShops', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/product-search', 'Api\TiktokIntegrationController::productSearch', ['filter' => ['auth', 'role:admin']]);
+    $routes->get('tiktok/read/product-search', 'Api\TiktokIntegrationController::productSearchPreview', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('tiktok/read/product-search', 'Api\TiktokIntegrationController::productSearchPreview', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('tiktok/read/product-search-url', 'Api\TiktokIntegrationController::previewSearchUrl', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('tiktok/read/product-search-response', 'Api\TiktokIntegrationController::previewSearchResponse', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/import-search-url', 'Api\TiktokIntegrationController::importSearchUrl', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/import-search-response', 'Api\TiktokIntegrationController::importSearchResponse', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('tiktok/import-legacy-revenue', 'Api\TiktokIntegrationController::importLegacyRevenue', ['filter' => ['auth', 'role:admin']]);
     $routes->get('tiktok/orders/(:segment)', 'Api\TiktokIntegrationController::orderDetail/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->get('tiktok/orders-new/(:segment)', 'Api\TiktokIntegrationController::orderDetailNew/$1', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('tiktok/orders-new/(:segment)/import', 'Api\TiktokIntegrationController::importOrderDetailNew/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->get('tiktok/products/(:segment)/detail', 'Api\TiktokIntegrationController::productDetail/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/products/(:segment)/sync-skus', 'Api\TiktokIntegrationController::syncProductSkus/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/inventory/update', 'Api\TiktokIntegrationController::updateInventory', ['filter' => ['auth', 'role:admin']]);
@@ -76,6 +85,8 @@ $routes->group('api', static function ($routes) {
     $routes->put('orders/(:num)/status', 'Api\OrdersController::updateStatus/$1', ['filter' => ['auth', 'role:admin']]);
 
     $routes->get('operating-costs', 'Api\OperatingCostsController::index', ['filter' => 'auth']);
+    $routes->get('operating-cost-settings', 'Api\OperatingCostsController::feeSettings', ['filter' => 'auth']);
+    $routes->put('operating-cost-settings', 'Api\OperatingCostsController::saveFeeSettings', ['filter' => ['auth', 'role:admin']]);
     $routes->post('operating-costs', 'Api\OperatingCostsController::create', ['filter' => ['auth', 'role:admin']]);
     $routes->get('operating-costs/(:num)', 'Api\OperatingCostsController::show/$1', ['filter' => 'auth']);
     $routes->put('operating-costs/(:num)', 'Api\OperatingCostsController::update/$1', ['filter' => ['auth', 'role:admin']]);

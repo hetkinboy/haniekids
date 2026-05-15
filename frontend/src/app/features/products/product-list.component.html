@@ -1,0 +1,217 @@
+
+    <section class="app-shell space-y-4">
+      <div class="page-header">
+        <div>
+          <h1 class="m-0 text-2xl font-semibold text-slate-950">Sản phẩm kho gốc</h1>
+          <p class="m-0 mt-1 text-sm text-slate-500">Quản lý mặt hàng gốc, sau đó cấu hình Size/Combo và sinh SKU kho.</p>
+        </div>
+        @if (auth.isAdmin()) {
+          <button nz-button nzType="primary" (click)="openCreate()">
+            <span nz-icon nzType="plus"></span>
+            Thêm sản phẩm
+          </button>
+        }
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Tổng sản phẩm</div>
+          <div class="metric-value">{{ total() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Đang bán</div>
+          <div class="metric-value text-emerald-700">{{ activeCount() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Tạm dừng</div>
+          <div class="metric-value text-slate-600">{{ inactiveCount() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Quy tắc tồn kho</div>
+          <div class="mt-2 text-sm font-medium text-blue-700">Theo size</div>
+        </div>
+      </div>
+
+      <div class="surface p-3">
+        <form class="filter-bar" [formGroup]="filters" (ngSubmit)="load()">
+          <input nz-input class="!w-80" formControlName="keyword" placeholder="Tìm mã hoặc tên sản phẩm" />
+          <nz-select class="!w-40" formControlName="status" nzAllowClear nzPlaceHolder="Trạng thái">
+            <nz-option nzValue="active" nzLabel="Active" />
+            <nz-option nzValue="inactive" nzLabel="Inactive" />
+          </nz-select>
+          <button nz-button nzType="default" type="submit">
+            <span nz-icon nzType="reload"></span>
+            Lọc
+          </button>
+        </form>
+      </div>
+
+      <div class="data-table desktop-table surface">
+        <nz-table
+          [nzData]="products()"
+          [nzLoading]="loading()"
+          [nzPageIndex]="page()"
+          [nzPageSize]="pageSize()"
+          [nzTotal]="total()"
+          [nzFrontPagination]="false"
+          [nzScroll]="{ x: '920px' }"
+          (nzPageIndexChange)="page.set($event); load()"
+          (nzPageSizeChange)="pageSize.set($event); load()"
+        >
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Tên sản phẩm</th>
+              <th>Danh mục</th>
+              <th>Trạng thái</th>
+              <th nzRight class="w-[280px]">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (product of products(); track product.id) {
+              <tr>
+                <td class="font-semibold text-slate-900">{{ product.product_code }}</td>
+                <td>
+                  <div class="font-medium text-slate-900">{{ product.name }}</div>
+                  <div class="text-xs text-slate-500">{{ product.description || 'Chưa có mô tả' }}</div>
+                </td>
+                <td>{{ product.category || '-' }}</td>
+                <td>
+                  <nz-tag [nzColor]="product.status === 'active' ? 'green' : 'default'">{{ product.status }}</nz-tag>
+                </td>
+                <td nzRight>
+                  <div class="flex flex-wrap gap-2">
+                    <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'variants']">Biến thể</a>
+                    <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'skus']">SKU</a>
+                    @if (auth.isAdmin()) {
+                      <button nz-button nzSize="small" (click)="openEdit(product)">
+                        <span nz-icon nzType="edit"></span>
+                        Sửa
+                      </button>
+                      <button nz-button nzSize="small" (click)="openCopy(product)">
+                        <span nz-icon nzType="copy"></span>
+                        Copy
+                      </button>
+                      <button nz-button nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa sản phẩm này?" (nzOnConfirm)="delete(product.id)">
+                        Xóa
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+
+      <div class="mobile-list">
+        @for (product of products(); track product.id) {
+          <article class="surface p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="font-semibold text-slate-950">{{ product.product_code }}</div>
+                <div class="truncate text-sm text-slate-700">{{ product.name }}</div>
+                <div class="text-xs text-slate-500">{{ product.category || '-' }}</div>
+              </div>
+              <nz-tag [nzColor]="product.status === 'active' ? 'green' : 'default'">{{ product.status }}</nz-tag>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'variants']">Biến thể</a>
+              <a nz-button nzSize="small" [routerLink]="['/products', product.id, 'skus']">SKU</a>
+              @if (auth.isAdmin()) {
+                <button nz-button nzSize="small" (click)="openEdit(product)"><span nz-icon nzType="edit"></span> Sửa</button>
+                <button nz-button nzSize="small" (click)="openCopy(product)"><span nz-icon nzType="copy"></span> Copy</button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <nz-modal
+      [nzVisible]="modalVisible()"
+      [nzTitle]="editing() ? 'Sửa sản phẩm' : 'Thêm sản phẩm'"
+      nzOkText="Lưu"
+      nzCancelText="Hủy"
+      (nzOnCancel)="modalVisible.set(false)"
+      (nzOnOk)="save()"
+      [nzOkLoading]="saving()"
+    >
+      <ng-container *nzModalContent>
+        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="form">
+          <nz-form-item>
+            <nz-form-label nzRequired>Mã sản phẩm</nz-form-label>
+            <nz-form-control nzErrorTip="Nhập mã sản phẩm">
+              <input nz-input formControlName="product_code" placeholder="Ví dụ: SP001" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>Tên sản phẩm</nz-form-label>
+            <nz-form-control nzErrorTip="Nhập tên sản phẩm">
+              <input nz-input formControlName="name" placeholder="Ví dụ: Áo thun cotton" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>Danh mục</nz-form-label>
+            <input nz-input formControlName="category" placeholder="Ví dụ: Thời trang" />
+          </nz-form-item>
+          <nz-form-item class="full-span">
+            <nz-form-label>Mô tả</nz-form-label>
+            <textarea nz-input rows="3" formControlName="description" placeholder="Ghi chú ngắn về sản phẩm"></textarea>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>Trạng thái</nz-form-label>
+            <nz-select formControlName="status">
+              <nz-option nzValue="active" nzLabel="Active" />
+              <nz-option nzValue="inactive" nzLabel="Inactive" />
+            </nz-select>
+          </nz-form-item>
+        </form>
+      </ng-container>
+    </nz-modal>
+
+    <nz-modal
+      [nzVisible]="copyModalVisible()"
+      nzTitle="Copy sản phẩm kho gốc"
+      nzOkText="Copy sản phẩm"
+      nzCancelText="Hủy"
+      (nzOnCancel)="copyModalVisible.set(false)"
+      (nzOnOk)="copyProduct()"
+      [nzOkLoading]="copying()"
+    >
+      <ng-container *nzModalContent>
+        <div class="mb-4 rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+          Sản phẩm gốc: <span class="font-semibold">{{ copySource()?.product_code }}</span> - {{ copySource()?.name }}
+        </div>
+        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="copyForm">
+          <nz-form-item>
+            <nz-form-label nzRequired>Mã sản phẩm mới</nz-form-label>
+            <nz-form-control nzErrorTip="Nhập mã sản phẩm mới">
+              <input nz-input formControlName="product_code" placeholder="Ví dụ: AT-03" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>Tên sản phẩm mới</nz-form-label>
+            <nz-form-control nzErrorTip="Nhập tên sản phẩm mới">
+              <input nz-input formControlName="name" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>Danh mục</nz-form-label>
+            <input nz-input formControlName="category" />
+          </nz-form-item>
+          <nz-form-item class="full-span">
+            <nz-form-label>Mô tả</nz-form-label>
+            <textarea nz-input rows="3" formControlName="description"></textarea>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>Trạng thái</nz-form-label>
+            <nz-select formControlName="status">
+              <nz-option nzValue="active" nzLabel="Active" />
+              <nz-option nzValue="inactive" nzLabel="Inactive" />
+            </nz-select>
+          </nz-form-item>
+        </form>
+      </ng-container>
+    </nz-modal>
+  

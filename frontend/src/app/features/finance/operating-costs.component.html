@@ -1,0 +1,188 @@
+
+    <section class="app-shell space-y-5">
+      <div class="page-header">
+        <div>
+          <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Chi phí vận hành</h1>
+          <p class="m-0 mt-1 text-sm text-slate-500">Cài đặt phí cố định và ghi nhận khoản chi theo ngày hoặc theo tháng.</p>
+        </div>
+        <button nz-button nzType="primary" (click)="openCreate()">
+          <span nz-icon nzType="plus"></span>
+          Thêm chi phí
+        </button>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Tổng chi phí đang lọc</div>
+          <div class="metric-value">{{ filteredTotal() | number: '1.0-0' }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Số khoản chi</div>
+          <div class="metric-value text-[#006a65]">{{ total() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Phí cố định active</div>
+          <div class="metric-value text-blue-700">{{ activeFeeSettings() }}</div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4">
+          <div>
+            <h2 class="m-0 text-lg font-semibold text-slate-950">Cài đặt phí cố định</h2>
+            <p class="m-0 text-sm text-slate-500">Dùng cho các phí tính tự động theo đơn TikTok.</p>
+          </div>
+          <button nz-button nzType="primary" [nzLoading]="savingSettings()" (click)="saveFeeSettings()">
+            <span nz-icon nzType="save"></span>
+            Lưu phí cố định
+          </button>
+        </div>
+        <nz-table [nzData]="feeSettings()" [nzLoading]="settingsLoading()" [nzFrontPagination]="false" [nzScroll]="{ x: '860px' }">
+          <thead>
+            <tr>
+              <th>Loại phí</th>
+              <th>Kiểu tính</th>
+              <th>Giá trị</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (setting of feeSettings(); track setting.fee_key) {
+              <tr>
+                <td class="font-medium text-slate-950">{{ setting.label }}</td>
+                <td>
+                  <nz-select class="!w-36" [(ngModel)]="setting.value_type">
+                    <nz-option nzValue="percent" nzLabel="Phần trăm" />
+                    <nz-option nzValue="fixed" nzLabel="Cố định" />
+                  </nz-select>
+                </td>
+                <td>
+                  <nz-input-number class="!w-40" [(ngModel)]="setting.rate" [nzMin]="0" />
+                  <span class="ml-2 text-sm text-slate-500">{{ setting.value_type === 'percent' ? '%' : 'đ / đơn' }}</span>
+                </td>
+                <td>
+                  <nz-select class="!w-32" [(ngModel)]="setting.status">
+                    <nz-option nzValue="active" nzLabel="Active" />
+                    <nz-option nzValue="inactive" nzLabel="Inactive" />
+                  </nz-select>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+
+      <div class="surface p-4">
+        <form class="filter-bar" [formGroup]="filters" (ngSubmit)="load()">
+          <nz-select class="!w-44" formControlName="date_preset" (ngModelChange)="onDatePresetChange($event)">
+            @for (option of dateRangeOptions; track option.value) {
+              <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+            }
+          </nz-select>
+          <input nz-input type="date" class="!w-44" formControlName="date_from" />
+          <input nz-input type="date" class="!w-44" formControlName="date_to" />
+          <nz-select class="!w-56" formControlName="cost_type" nzAllowClear nzPlaceHolder="Loại chi phí">
+            @for (type of costTypes; track type) {
+              <nz-option [nzValue]="type" [nzLabel]="typeLabel(type)" />
+            }
+          </nz-select>
+          <button nz-button type="submit">
+            <span nz-icon nzType="reload"></span>
+            Lọc
+          </button>
+        </form>
+      </div>
+
+      <div class="surface">
+        <nz-table
+          [nzData]="items()"
+          [nzLoading]="loading()"
+          [nzFrontPagination]="false"
+          [nzTotal]="total()"
+          [nzPageIndex]="page()"
+          [nzPageSize]="pageSize()"
+          [nzScroll]="{ x: '900px' }"
+          (nzPageIndexChange)="page.set($event); load()"
+          (nzPageSizeChange)="pageSize.set($event); load()"
+        >
+          <thead>
+            <tr>
+              <th>Ngày bắt đầu</th>
+              <th>Loại chi phí</th>
+              <th>Số tiền</th>
+              <th>Kỳ áp dụng</th>
+              <th>Ghi chú</th>
+              <th class="w-[150px]">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr>
+                <td>{{ item.cost_date }}</td>
+                <td><nz-tag>{{ typeLabel(item.cost_type) }}</nz-tag></td>
+                <td class="font-semibold">{{ item.amount | number: '1.0-0' }}</td>
+                <td>{{ periodLabel(item.allocation_type) }}</td>
+                <td>{{ item.note || '-' }}</td>
+                <td>
+                  <button nz-button nzSize="small" (click)="openEdit(item)">
+                    <span nz-icon nzType="edit"></span>
+                  </button>
+                  <button nz-button nzDanger nzSize="small" class="ml-2" nz-popconfirm nzPopconfirmTitle="Xóa chi phí này?" (nzOnConfirm)="delete(item.id)">
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </section>
+
+    <nz-modal
+      [nzVisible]="modalVisible()"
+      [nzTitle]="editing() ? 'Sửa chi phí' : 'Thêm chi phí'"
+      nzOkText="Lưu"
+      nzCancelText="Hủy"
+      [nzOkLoading]="saving()"
+      (nzOnCancel)="modalVisible.set(false)"
+      (nzOnOk)="save()"
+      nzWidth="640px"
+    >
+      <ng-container *nzModalContent>
+        <form nz-form nzLayout="vertical" class="form-grid" [formGroup]="form">
+          <nz-form-item>
+            <nz-form-label nzRequired>Ngày bắt đầu</nz-form-label>
+            <nz-form-control nzErrorTip="Chọn ngày bắt đầu">
+              <input nz-input type="date" formControlName="cost_date" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>Kỳ áp dụng</nz-form-label>
+            <nz-select formControlName="allocation_type">
+              @for (type of periodTypes; track type) {
+                <nz-option [nzValue]="type" [nzLabel]="periodLabel(type)" />
+              }
+            </nz-select>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>Loại chi phí</nz-form-label>
+            <nz-select formControlName="cost_type">
+              @for (type of costTypes; track type) {
+                <nz-option [nzValue]="type" [nzLabel]="typeLabel(type)" />
+              }
+            </nz-select>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>Số tiền</nz-form-label>
+            <nz-form-control nzErrorTip="Nhập số tiền">
+              <nz-input-number class="!w-full" formControlName="amount" [nzMin]="0" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item class="md:col-span-2">
+            <nz-form-label>Ghi chú</nz-form-label>
+            <input nz-input formControlName="note" />
+          </nz-form-item>
+        </form>
+      </ng-container>
+    </nz-modal>
+  
