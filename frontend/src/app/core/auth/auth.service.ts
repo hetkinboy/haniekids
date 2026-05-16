@@ -5,7 +5,7 @@ import { Store } from '@ngrx/store';
 
 import { API_BASE_URL } from '../api/api.config';
 import { ApiResponse } from '../api/api.models';
-import { AuthUser, LoginData } from './auth.models';
+import { AuthUser, ChangePasswordPayload, CreateUserPayload, LoginData, UpdateUserPayload, UserListData } from './auth.models';
 import { authLoggedIn, authLoggedOut } from '../../store/auth.actions';
 
 const TOKEN_KEY = 'tiktok_cost_token';
@@ -39,6 +39,26 @@ export class AuthService {
         this.setSession(response.data.token, response.data.user);
       }),
     );
+  }
+
+  users(): Observable<ApiResponse<UserListData>> {
+    return this.http.get<ApiResponse<UserListData>>(`${API_BASE_URL}/users`);
+  }
+
+  createUser(payload: CreateUserPayload): Observable<ApiResponse<{ user: AuthUser }>> {
+    return this.http.post<ApiResponse<{ user: AuthUser }>>(`${API_BASE_URL}/users`, payload);
+  }
+
+  updateUser(id: number, payload: UpdateUserPayload): Observable<ApiResponse<{ user: AuthUser }>> {
+    return this.http.put<ApiResponse<{ user: AuthUser }>>(`${API_BASE_URL}/users/${id}`, payload);
+  }
+
+  deleteUser(id: number): Observable<ApiResponse<unknown>> {
+    return this.http.delete<ApiResponse<unknown>>(`${API_BASE_URL}/users/${id}`);
+  }
+
+  changePassword(payload: ChangePasswordPayload): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${API_BASE_URL}/auth/change-password`, payload);
   }
 
   logout(): void {
@@ -78,4 +98,3 @@ export class AuthService {
     }
   }
 }
-

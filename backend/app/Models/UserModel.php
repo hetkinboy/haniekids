@@ -40,5 +40,20 @@ class UserModel extends Model
             ->where('users.status', 'active')
             ->first();
     }
-}
 
+    public function findAnyWithRole(int $id): ?array
+    {
+        return $this->select('users.id, users.role_id, users.name, users.email, users.status, users.last_login_at, roles.name AS role')
+            ->join('roles', 'roles.id = users.role_id')
+            ->where('users.id', $id)
+            ->first();
+    }
+
+    public function listWithRole(): array
+    {
+        return $this->select('users.id, users.role_id, users.name, users.email, users.status, users.last_login_at, roles.name AS role')
+            ->join('roles', 'roles.id = users.role_id')
+            ->orderBy('users.id', 'ASC')
+            ->findAll();
+    }
+}

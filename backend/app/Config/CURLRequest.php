@@ -17,10 +17,19 @@ class CURLRequest extends BaseConfig
      *
      * @see https://www.php.net/manual/en/curl.constants.php#constant.curl-lock-data-connect
      */
-    public array $shareConnectionOptions = [
-        CURL_LOCK_DATA_CONNECT,
-        CURL_LOCK_DATA_DNS,
-    ];
+    public array $shareConnectionOptions = [];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        if (defined('CURL_LOCK_DATA_CONNECT') && defined('CURL_LOCK_DATA_DNS')) {
+            $this->shareConnectionOptions = [
+                CURL_LOCK_DATA_CONNECT,
+                CURL_LOCK_DATA_DNS,
+            ];
+        }
+    }
 
     /**
      * --------------------------------------------------------------------------

@@ -1,2 +1,5 @@
-export const API_BASE_URL = 'http://localhost:8080/api';
+import { isDevMode } from '@angular/core';
 
+export const API_BASE_URL = isDevMode()
+  ? 'https://haniapi.limousinevn.vn/api'
+  : 'https://haniapi.limousinevn.vn/api';

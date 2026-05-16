@@ -1,0 +1,69 @@
+<section class="app-shell space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="m-0 text-3xl font-bold tracking-tight text-slate-950">Thông tin tài khoản</h1>
+      <p class="m-0 mt-1 text-sm text-slate-500">Xem thông tin đăng nhập và cập nhật mật khẩu của bạn.</p>
+    </div>
+  </div>
+
+  <div class="grid gap-5 xl:grid-cols-[420px_1fr]">
+    <div class="surface p-5">
+      <h2 class="m-0 mb-4 text-xl font-semibold text-slate-950">Đổi mật khẩu</h2>
+      <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+        <nz-form-item>
+          <nz-form-label nzRequired>Mật khẩu hiện tại</nz-form-label>
+          <nz-form-control nzErrorTip="Nhập mật khẩu hiện tại">
+            <input nz-input type="password" formControlName="current_password" autocomplete="current-password" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Mật khẩu mới</nz-form-label>
+          <nz-form-control nzErrorTip="Mật khẩu tối thiểu 8 ký tự">
+            <input nz-input type="password" formControlName="new_password" autocomplete="new-password" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Xác nhận mật khẩu mới</nz-form-label>
+          <nz-form-control nzErrorTip="Nhập lại mật khẩu mới">
+            <input nz-input type="password" formControlName="confirm_password" autocomplete="new-password" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="form.invalid">
+          <span nz-icon nzType="save"></span>
+          Lưu mật khẩu
+        </button>
+      </form>
+    </div>
+
+    <div class="surface p-5">
+      <h2 class="m-0 mb-4 text-xl font-semibold text-slate-950">Tài khoản hiện tại</h2>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <div class="text-xs font-semibold uppercase text-slate-500">Họ tên</div>
+          <div class="mt-1 font-semibold text-slate-950">{{ auth.user()?.name || '-' }}</div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase text-slate-500">Email</div>
+          <div class="mt-1 text-slate-800">{{ auth.user()?.email || '-' }}</div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase text-slate-500">Vai trò</div>
+          <div class="mt-1">
+            <nz-tag [nzColor]="auth.user()?.role === 'admin' ? 'blue' : 'default'">
+              {{ auth.user()?.role === 'admin' ? 'Admin' : 'Nhân viên' }}
+            </nz-tag>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase text-slate-500">Trạng thái</div>
+          <div class="mt-1">
+            <nz-tag [nzColor]="auth.user()?.status === 'active' ? 'green' : 'red'">{{ auth.user()?.status || '-' }}</nz-tag>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -15,6 +15,11 @@ $routes->group('api', static function ($routes) {
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->get('auth/me', 'Api\AuthController::me', ['filter' => 'auth']);
     $routes->post('auth/logout', 'Api\AuthController::logout', ['filter' => 'auth']);
+    $routes->post('auth/change-password', 'Api\AuthController::changePassword', ['filter' => 'auth']);
+    $routes->get('users', 'Api\AuthController::users', ['filter' => ['auth', 'role:admin']]);
+    $routes->post('users', 'Api\AuthController::createUser', ['filter' => ['auth', 'role:admin']]);
+    $routes->put('users/(:num)', 'Api\AuthController::updateUser/$1', ['filter' => ['auth', 'role:admin']]);
+    $routes->delete('users/(:num)', 'Api\AuthController::deleteUser/$1', ['filter' => ['auth', 'role:admin']]);
 
     $routes->get('products', 'Api\ProductsController::index', ['filter' => 'auth']);
     $routes->get('products/(:num)', 'Api\ProductsController::show/$1', ['filter' => 'auth']);

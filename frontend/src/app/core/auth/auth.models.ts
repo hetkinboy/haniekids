@@ -4,6 +4,7 @@ export interface AuthUser {
   email: string;
   role: 'admin' | 'member';
   status: string;
+  last_login_at?: string | null;
 }
 
 export interface LoginData {
@@ -13,3 +14,27 @@ export interface LoginData {
   user: AuthUser;
 }
 
+export interface UserListData {
+  items: AuthUser[];
+}
+
+export interface CreateUserPayload {
+  name: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'member';
+  status: 'active' | 'inactive';
+}
+
+export interface UpdateUserPayload {
+  name: string;
+  email: string;
+  password?: string;
+  role: 'admin' | 'member';
+  status: 'active' | 'inactive';
+}
+
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+}

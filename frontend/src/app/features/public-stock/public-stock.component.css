@@ -6,9 +6,9 @@
 }
 
 .public-page {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 24px 0 40px;
+  padding: 18px 0 32px;
 }
 
 .topbar {
@@ -65,7 +65,8 @@
   border: 1px solid #dbe3ef;
   border-radius: 8px;
   background: #ffffff;
-  padding: 12px;
+  padding: 10px;
+  overflow: hidden;
 }
 
 .product-heading {
@@ -85,7 +86,7 @@
 }
 
 .size-col {
-  width: 120px;
+  width: 96px;
 }
 
 .size-name,
@@ -98,9 +99,9 @@
 }
 
 .combo-value {
-  min-height: 44px;
+  min-height: 38px;
   border-radius: 8px;
-  padding: 7px 8px;
+  padding: 5px 6px;
   font-weight: 700;
   text-align: center;
 }
@@ -132,8 +133,8 @@
 .quantity-button {
   display: block;
   width: 100%;
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 18px;
+  line-height: 26px;
 }
 
 .quantity-button {
@@ -162,9 +163,138 @@
   text-align: center;
 }
 
+.stock-table {
+  width: 100%;
+}
+
+:host ::ng-deep .stock-table .ant-table {
+  table-layout: fixed;
+}
+
+:host ::ng-deep .stock-table .ant-table-thead > tr > th,
+:host ::ng-deep .stock-table .ant-table-tbody > tr > td {
+  padding: 7px 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .stock-table .ant-table-thead > tr > th:first-child,
+:host ::ng-deep .stock-table .ant-table-tbody > tr > td:first-child {
+  text-align: left;
+}
+
+:host ::ng-deep .stock-panel .ant-tabs-tab {
+  padding: 8px 0;
+}
+
+:host ::ng-deep .stock-panel .ant-tabs-tab-btn {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .stock-panel .ant-tabs-nav {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 820px) {
+  .public-page {
+    width: calc(100% - 12px);
+    padding: 8px 0 18px;
+  }
+
+  .topbar {
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .topbar h1 {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .topbar p {
+    display: none;
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .summary div {
+    padding: 8px 10px;
+  }
+
+  .summary span {
+    font-size: 12px;
+  }
+
+  .summary strong {
+    font-size: 20px;
+  }
+
+  .stock-panel {
+    padding: 6px;
+  }
+
+  .product-heading {
+    padding: 4px 0 8px;
+  }
+
+  .product-heading h2 {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .product-heading span {
+    font-size: 12px;
+  }
+
+  .size-col {
+    width: 72px;
+  }
+
+  .combo-value {
+    min-height: 32px;
+    border-radius: 6px;
+    padding: 3px 4px;
+  }
+
+  .combo-value strong,
+  .quantity-button {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .inline-actions {
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  :host ::ng-deep .stock-table .ant-table-thead > tr > th,
+  :host ::ng-deep .stock-table .ant-table-tbody > tr > td {
+    padding: 5px 4px;
+  }
+
+  :host ::ng-deep .stock-table .ant-tag {
+    max-width: 64px;
+    margin-inline-end: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  :host ::ng-deep .stock-panel .ant-tabs-tab-btn {
+    max-width: 160px;
+  }
+}
+
 @media (max-width: 640px) {
   .public-page {
-    width: min(100% - 20px, 1180px);
+    width: min(100% - 10px, 1180px);
     padding-top: 14px;
   }
 
