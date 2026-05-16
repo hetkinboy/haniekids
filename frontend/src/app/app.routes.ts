@@ -7,6 +7,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'public-stock',
+    loadComponent: () =>
+      import('./features/public-stock/public-stock.component').then((m) => m.PublicStockComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>

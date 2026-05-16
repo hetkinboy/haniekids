@@ -3,10 +3,12 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\TiktokShopApiClient;
 use App\Models\ProductModel;
 use App\Models\ProductSkuModel;
 use App\Models\StockBySizeModel;
 use App\Models\StockMovementModel;
+use App\Models\TiktokSkuModel;
 use App\Models\VariantGroupModel;
 use App\Models\VariantOptionModel;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -19,8 +21,10 @@ class StockController extends BaseController
     private ProductSkuModel $skus;
     private StockBySizeModel $stock;
     private StockMovementModel $movements;
+    private TiktokSkuModel $tiktokSkus;
     private VariantGroupModel $groups;
     private VariantOptionModel $options;
+    private TiktokShopApiClient $tiktokClient;
 
     public function __construct()
     {
@@ -28,8 +32,10 @@ class StockController extends BaseController
         $this->skus = new ProductSkuModel();
         $this->stock = new StockBySizeModel();
         $this->movements = new StockMovementModel();
+        $this->tiktokSkus = new TiktokSkuModel();
         $this->groups = new VariantGroupModel();
         $this->options = new VariantOptionModel();
+        $this->tiktokClient = new TiktokShopApiClient();
     }
 
     public function productStock(int $productId): ResponseInterface
@@ -82,6 +88,144 @@ class StockController extends BaseController
 
         return api_success('Success', [
             'items' => array_map(fn (array $item): array => $this->formatStock($item), $items),
+        ]);
+    }
+
+    public function publicMatrix(): ResponseInterface
+    {
+        $products = $this->products
+            ->where('status', 'active')
+            ->orderBy('id', 'ASC')
+            ->findAll();
+        $items = [];
+
+        foreach ($products as $product) {
+            $productId = (int) $product['id'];
+            $sizeGroup = $this->groups
+                ->where('product_id', $productId)
+                ->where('is_stock_group', 1)
+                ->where('status', 'active')
+                ->first();
+
+            if (! $sizeGroup) {
+                continue;
+            }
+
+            $sizes = $this->options
+                ->where('variant_group_id', (int) $sizeGroup['id'])
+                ->where('status', 'active')
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+            $skus = $this->skus
+                ->where('product_id', $productId)
+                ->where('is_active', 1)
+                ->orderBy('combo_quantity', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+            $stocks = $this->stock->where('product_id', $productId)->findAll();
+            $stockBySize = [];
+
+            foreach ($stocks as $stock) {
+                $stockBySize[(int) $stock['size_option_id']] = $stock;
+            }
+
+            $combosBySize = [];
+            foreach ($skus as $sku) {
+                $combosBySize[(int) $sku['size_option_id']][] = [
+                    'sku_id'         => (int) $sku['id'],
+                    'sku_code'       => $sku['sku_code'],
+                    'combo_name'     => $sku['display_name'],
+                    'combo_option_id'=> (int) $sku['combo_option_id'],
+                    'combo_quantity' => max(1, (int) $sku['combo_quantity']),
+                ];
+            }
+
+            $rows = [];
+            foreach ($sizes as $size) {
+                $stock = $stockBySize[(int) $size['id']] ?? null;
+                $quantityOnHand = (int) ($stock['quantity_on_hand'] ?? 0);
+                $combos = [];
+
+                foreach ($combosBySize[(int) $size['id']] ?? [] as $combo) {
+                    $comboQuantity = max(1, (int) $combo['combo_quantity']);
+                    $combos[] = [
+                        ...$combo,
+                        'quantity' => intdiv(max(0, $quantityOnHand), $comboQuantity),
+                        'editable' => $comboQuantity === 1,
+                    ];
+                }
+
+                $rows[] = [
+                    'stock_id' => (int) ($stock['id'] ?? 0),
+                    'size_option_id' => (int) $size['id'],
+                    'size_name' => $size['name'],
+                    'quantity_on_hand' => $quantityOnHand,
+                    'quantity_available' => (int) ($stock['quantity_available'] ?? $quantityOnHand),
+                    'combos' => $combos,
+                ];
+            }
+
+            $items[] = [
+                'id' => $productId,
+                'product_code' => $product['product_code'],
+                'name' => $product['name'],
+                'rows' => $rows,
+            ];
+        }
+
+        return api_success('Success', ['items' => $items]);
+    }
+
+    public function publicSetComboOne(): ResponseInterface
+    {
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $productId = (int) ($payload['product_id'] ?? 0);
+        $sizeOptionId = (int) ($payload['size_option_id'] ?? 0);
+        $quantity = (int) ($payload['quantity'] ?? -1);
+
+        if (! $this->products->find($productId) || ! $this->isSizeOptionOfProduct($productId, $sizeOptionId) || $quantity < 0) {
+            return api_error('Validation failed', [
+                'product_id' => 'Product/size/quantity khong hop le.',
+            ], 422);
+        }
+
+        $this->stock->db->transStart();
+        $stock = $this->findOrCreateStock($productId, $sizeOptionId);
+        $before = (int) $stock['quantity_on_hand'];
+        $after = $quantity;
+        $delta = $after - $before;
+
+        $this->stock->update((int) $stock['id'], [
+            'quantity_on_hand' => $after,
+            'quantity_available' => max(0, $after - (int) ($stock['quantity_reserved'] ?? 0)),
+        ]);
+
+        $movementId = $this->movements->insert([
+            'product_id' => $productId,
+            'size_option_id' => $sizeOptionId,
+            'movement_type' => 'adjustment',
+            'quantity' => $delta,
+            'quantity_before' => $before,
+            'quantity_after' => $after,
+            'unit_cost' => (float) ($stock['avg_cost'] ?? 0),
+            'reference_type' => 'public_combo_1_adjustment',
+            'reference_id' => null,
+            'note' => 'Public stock page set combo 1 quantity',
+        ], true);
+
+        $this->stock->db->transComplete();
+
+        if ($this->stock->db->transStatus() === false) {
+            return api_error('Could not adjust stock', [], 500);
+        }
+
+        $tiktokSync = $this->syncTiktokInventoryForSize($productId, $sizeOptionId, $after, $payload);
+
+        return api_success('Stock adjusted', [
+            'stock' => $this->formatStock($this->stock->find((int) $stock['id'])),
+            'movement' => $this->movements->find($movementId),
+            'tiktok_sync' => $tiktokSync,
         ]);
     }
 
@@ -190,9 +334,12 @@ class StockController extends BaseController
             return api_error('Could not adjust stock', [], 500);
         }
 
+        $tiktokSync = $this->syncTiktokInventoryForSize($productId, $sizeOptionId, $after, $payload);
+
         return api_success('Stock adjusted', [
-            'stock'    => $this->formatStock($this->stock->find($stock['id'])),
-            'movement' => $this->movements->find($movementId),
+            'stock'       => $this->formatStock($this->stock->find($stock['id'])),
+            'movement'    => $this->movements->find($movementId),
+            'tiktok_sync' => $tiktokSync,
         ]);
     }
 
@@ -469,6 +616,70 @@ class StockController extends BaseController
                 'cost_price' => $suggestedCost,
             ]);
         }
+    }
+
+    private function syncTiktokInventoryForSize(int $productId, int $sizeOptionId, int $quantityOnHand, array $payload): array
+    {
+        $linkedSkus = $this->skus
+            ->select('product_skus.id, product_skus.combo_quantity, tiktok_skus.id AS local_tiktok_sku_id, tiktok_skus.tiktok_sku_id, tiktok_products.tiktok_product_id')
+            ->join('tiktok_skus', 'tiktok_skus.product_sku_id = product_skus.id')
+            ->join('tiktok_products', 'tiktok_products.id = tiktok_skus.tiktok_product_id')
+            ->where('product_skus.product_id', $productId)
+            ->where('product_skus.size_option_id', $sizeOptionId)
+            ->where('product_skus.is_active', 1)
+            ->where('tiktok_skus.status', 'active')
+            ->findAll();
+
+        $results = [];
+        $connectionId = isset($payload['connection_id']) && $payload['connection_id'] !== ''
+            ? (int) $payload['connection_id']
+            : null;
+        $writeEnabled = filter_var(env('TIKTOK_INVENTORY_WRITE_ENABLED') ?? 'false', FILTER_VALIDATE_BOOLEAN);
+
+        foreach ($linkedSkus as $sku) {
+            $comboQuantity = max(1, (int) $sku['combo_quantity']);
+            $tiktokQuantity = intdiv(max(0, $quantityOnHand), $comboQuantity);
+            $result = [
+                'product_sku_id'    => (int) $sku['id'],
+                'tiktok_product_id' => (string) $sku['tiktok_product_id'],
+                'tiktok_sku_id'     => (string) $sku['tiktok_sku_id'],
+                'combo_quantity'    => $comboQuantity,
+                'quantity'          => $tiktokQuantity,
+                'mode'              => $writeEnabled ? 'real' : 'dry_run',
+            ];
+
+            if ($writeEnabled) {
+                try {
+                    $response = $this->tiktokClient->updateInventory(
+                        (string) $sku['tiktok_product_id'],
+                        (string) $sku['tiktok_sku_id'],
+                        $tiktokQuantity,
+                        $connectionId,
+                    );
+                    $code = (string) ($response['code'] ?? '0');
+                    $message = (string) ($response['message'] ?? '');
+                    $result['response'] = $response;
+                    $result['status'] = ($code === '0' || $message === 'Success') ? 'synced' : 'failed';
+
+                    if ($result['status'] === 'failed') {
+                        $result['error'] = $message !== '' ? $message : 'TikTok inventory update failed.';
+                    }
+                } catch (Throwable $throwable) {
+                    $result['status'] = 'failed';
+                    $result['error'] = $throwable->getMessage();
+                }
+            } else {
+                $result['status'] = 'skipped';
+            }
+
+            $this->tiktokSkus->update((int) $sku['local_tiktok_sku_id'], [
+                'tiktok_inventory_quantity' => $tiktokQuantity,
+            ]);
+
+            $results[] = $result;
+        }
+
+        return $results;
     }
 
     private function legacySkuSizeCode(string $legacySku): string

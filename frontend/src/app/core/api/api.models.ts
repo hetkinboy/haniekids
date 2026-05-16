@@ -129,6 +129,50 @@ export interface StockMovementListData {
   pager: Pager;
 }
 
+export interface TiktokInventorySyncItem {
+  product_sku_id: number;
+  tiktok_product_id: string;
+  tiktok_sku_id: string;
+  combo_quantity: number;
+  quantity: number;
+  status: 'synced' | 'failed' | 'skipped';
+  mode?: 'real' | 'dry_run';
+  error?: string;
+  response?: unknown;
+}
+
+export interface StockAdjustResult {
+  stock: StockBySize;
+  movement: StockMovement;
+  tiktok_sync: TiktokInventorySyncItem[];
+}
+
+export interface PublicStockCombo {
+  sku_id: number;
+  sku_code: string;
+  combo_name: string;
+  combo_option_id: number;
+  combo_quantity: number;
+  quantity: number;
+  editable: boolean;
+}
+
+export interface PublicStockRow {
+  stock_id: number;
+  size_option_id: number;
+  size_name: string;
+  quantity_on_hand: number;
+  quantity_available: number;
+  combos: PublicStockCombo[];
+}
+
+export interface PublicStockProduct {
+  id: number;
+  product_code: string;
+  name: string;
+  rows: PublicStockRow[];
+}
+
 export interface PurchaseImport {
   id: number;
   import_code: string;

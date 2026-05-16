@@ -593,6 +593,20 @@ class TiktokIntegrationController extends BaseController
     public function updateInventory(): ResponseInterface
     {
         $payload = $this->payload();
+
+        return $this->updateSingleInventory($payload);
+    }
+
+    public function capnhatsoluong1sanpham(): ResponseInterface
+    {
+        $payload = $this->request->getMethod() === 'get' ? $this->request->getGet() : $this->payload();
+        $payload = $this->normalizeSingleInventoryPayload($payload);
+
+        return $this->updateSingleInventory($payload);
+    }
+
+    private function updateSingleInventory(array $payload): ResponseInterface
+    {
         $errors = [];
 
         foreach (['product_id', 'sku_id', 'quantity'] as $field) {
@@ -617,10 +631,49 @@ class TiktokIntegrationController extends BaseController
                 $this->connectionId($payload),
             );
 
+            $this->rememberTiktokInventoryQuantity((string) $payload['sku_id'], (int) $payload['quantity']);
+
             return api_success('TikTok inventory updated', $data);
         } catch (Throwable $throwable) {
             return api_error($throwable->getMessage(), [], 500);
         }
+    }
+
+    private function normalizeSingleInventoryPayload(array $payload): array
+    {
+        $aliases = [
+            'product_id' => ['product_id', 'productId', 'tiktok_product_id', 'id_product', 'idproduct', 'id_san_pham', 'idsanpham'],
+            'sku_id'     => ['sku_id', 'skuId', 'tiktok_sku_id', 'id_sku', 'idsku'],
+            'quantity'   => ['quantity', 'soluong', 'so_luong', 'stock', 'ton_kho'],
+        ];
+
+        foreach ($aliases as $target => $keys) {
+            if (isset($payload[$target]) && $payload[$target] !== '') {
+                continue;
+            }
+
+            foreach ($keys as $key) {
+                if (array_key_exists($key, $payload) && $payload[$key] !== '') {
+                    $payload[$target] = $payload[$key];
+                    break;
+                }
+            }
+        }
+
+        return $payload;
+    }
+
+    private function rememberTiktokInventoryQuantity(string $skuId, int $quantity): void
+    {
+        $sku = $this->tiktokSkus->where('tiktok_sku_id', $skuId)->first();
+
+        if (! $sku) {
+            return;
+        }
+
+        $this->tiktokSkus->update((int) $sku['id'], [
+            'tiktok_inventory_quantity' => $quantity,
+        ]);
     }
 
     public function syncInventoryBySize(): ResponseInterface
@@ -1065,8 +1118,24 @@ class TiktokIntegrationController extends BaseController
 
         if ($existing) {
             $localOrderId = (int) $existing['id'];
-            if ((int) ($existing['stock_deducted'] ?? 0) === 1 && (int) ($existing['stock_returned'] ?? 0) === 0) {
-                $this->returnImportedOrderStock($existing, 'resync');
+            $stockAlreadyDeducted = (int) ($existing['stock_deducted'] ?? 0) === 1 && (int) ($existing['stock_returned'] ?? 0) === 0;
+
+            if ($stockAlreadyDeducted) {
+                $orderData['stock_deducted'] = 1;
+                $orderData['stock_returned'] = 0;
+                $this->orders->update($localOrderId, $orderData);
+
+                if (in_array($status, ['cancelled', 'returned'], true)) {
+                    $this->applyOrderStockState($localOrderId, $status);
+                }
+
+                $this->orders->db->transComplete();
+
+                if ($this->orders->db->transStatus() === false) {
+                    throw new RuntimeException('Could not import TikTok order ' . $tiktokOrderId);
+                }
+
+                return;
             }
 
             $this->orders->update($localOrderId, $orderData);

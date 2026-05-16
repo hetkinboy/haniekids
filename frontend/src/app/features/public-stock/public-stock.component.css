@@ -1,0 +1,182 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f6f8fb;
+  color: #0f172a;
+}
+
+.public-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.topbar h1,
+.product-heading h2 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.topbar h1 {
+  font-size: 26px;
+}
+
+.topbar p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 160px));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summary div {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+
+.summary span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.summary strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 24px;
+}
+
+.stock-panel {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.product-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 14px;
+}
+
+.product-heading h2 {
+  font-size: 20px;
+}
+
+.product-heading span {
+  color: #64748b;
+}
+
+.size-col {
+  width: 120px;
+}
+
+.size-name,
+.quantity {
+  font-weight: 700;
+}
+
+.quantity.low {
+  color: #dc2626;
+}
+
+.combo-value {
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.combo-value.ok {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.combo-value.low {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.combo-value.empty {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.combo-value.editable {
+  cursor: pointer;
+  outline: 1px solid #bfdbfe;
+}
+
+.combo-value strong,
+.quantity-button {
+  display: block;
+  width: 100%;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.quantity-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.combo-input {
+  width: 100%;
+}
+
+.inline-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.missing-combo {
+  display: block;
+  color: #94a3b8;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .public-page {
+    width: min(100% - 20px, 1180px);
+    padding-top: 14px;
+  }
+
+  .topbar {
+    display: block;
+  }
+
+  .topbar button {
+    margin-top: 12px;
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

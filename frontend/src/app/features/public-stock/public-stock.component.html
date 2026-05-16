@@ -1,0 +1,105 @@
+<main class="public-page">
+  <header class="topbar">
+    <div>
+      <h1>Ton kho san pham</h1>
+      <p>Xem nhanh so luong theo size va combo. Combo 1 co the sua truc tiep.</p>
+    </div>
+    <button nz-button nzType="default" (click)="load()" [nzLoading]="loading()">
+      <span nz-icon nzType="reload"></span>
+      Tai lai
+    </button>
+  </header>
+
+  <section class="summary">
+    <div>
+      <span>San pham</span>
+      <strong>{{ totalProducts() }}</strong>
+    </div>
+    <div>
+      <span>Dong size</span>
+      <strong>{{ totalSizes() }}</strong>
+    </div>
+  </section>
+
+  <section class="stock-panel">
+    <nz-tabs>
+      @for (product of products(); track product.id) {
+        <nz-tab [nzTitle]="product.product_code + ' - ' + product.name">
+          <div class="product-heading">
+            <div>
+              <h2>{{ product.name }}</h2>
+              <span>{{ product.product_code }}</span>
+            </div>
+          </div>
+
+          <nz-table
+            nzSize="middle"
+            [nzData]="product.rows"
+            [nzLoading]="loading()"
+            [nzFrontPagination]="false"
+            [nzScroll]="{ x: '720px' }"
+          >
+            <thead>
+              <tr>
+                <th class="size-col">Size</th>
+                @for (comboQuantity of comboColumns(product); track comboQuantity) {
+                  <th>{{ comboLabel(comboQuantity) }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of product.rows; track row.size_option_id) {
+                <tr>
+                  <td class="size-name">
+                    <nz-tag [nzColor]="row.quantity_available <= 0 ? 'red' : 'blue'">{{ row.size_name }}</nz-tag>
+                  </td>
+                  @for (comboColumn of comboColumns(product); track comboColumn) {
+                    @let combo = comboByQuantity(row, comboColumn);
+                    <td>
+                      @if (combo || comboColumn === 1) {
+                        @let quantity = displayQuantity(row, comboColumn, combo);
+                        <div [ngClass]="['combo-value', stockClass(quantity)]" [class.editable]="comboColumn === 1">
+                          @if (comboColumn === 1 && editingKey() === rowKey(row)) {
+                            <nz-input-number
+                              class="combo-input"
+                              [ngModel]="draftValue(row)"
+                              (ngModelChange)="setDraft(row, $event)"
+                              [nzMin]="0"
+                              (keydown.enter)="save(product, row)"
+                              (keydown.escape)="cancelEdit(row)"
+                            />
+                            <div class="inline-actions">
+                              <button
+                                nz-button
+                                nzType="primary"
+                                nzSize="small"
+                                [disabled]="!isDirty(row)"
+                                [nzLoading]="savingKey() === rowKey(row)"
+                                (click)="save(product, row)"
+                              >
+                                Luu
+                              </button>
+                              <button nz-button nzSize="small" (click)="cancelEdit(row)">Huy</button>
+                            </div>
+                          } @else if (comboColumn === 1) {
+                            <button class="quantity-button" type="button" (click)="startEdit(row)">
+                              {{ quantity }}
+                            </button>
+                          } @else {
+                            <strong>{{ quantity }}</strong>
+                          }
+                        </div>
+                      } @else {
+                        <span class="missing-combo">-</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </nz-tab>
+      }
+    </nz-tabs>
+  </section>
+</main>

@@ -9,6 +9,8 @@ $routes->get('/', 'Home::index');
 
 $routes->group('api', static function ($routes) {
     $routes->get('health', 'Api\HealthController::index');
+    $routes->get('public-stock', 'Api\StockController::publicMatrix');
+    $routes->post('public-stock/combo-1', 'Api\StockController::publicSetComboOne');
 
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->get('auth/me', 'Api\AuthController::me', ['filter' => 'auth']);
@@ -73,6 +75,7 @@ $routes->group('api', static function ($routes) {
     $routes->post('tiktok/orders-new/(:segment)/import', 'Api\TiktokIntegrationController::importOrderDetailNew/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->get('tiktok/products/(:segment)/detail', 'Api\TiktokIntegrationController::productDetail/$1', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/products/(:segment)/sync-skus', 'Api\TiktokIntegrationController::syncProductSkus/$1', ['filter' => ['auth', 'role:admin']]);
+    $routes->match(['get', 'post'], 'tiktok/capnhatsoluong1sanpham', 'Api\TiktokIntegrationController::capnhatsoluong1sanpham');
     $routes->post('tiktok/inventory/update', 'Api\TiktokIntegrationController::updateInventory', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/inventory/sync-size', 'Api\TiktokIntegrationController::syncInventoryBySize', ['filter' => ['auth', 'role:admin']]);
     $routes->post('tiktok/signature', 'Api\TiktokIntegrationController::sign', ['filter' => ['auth', 'role:admin']]);

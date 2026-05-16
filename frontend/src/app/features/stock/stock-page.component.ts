@@ -132,8 +132,20 @@ export class StockPageComponent implements OnInit {
       quantity: this.adjustForm.controls.quantity.value,
       note: this.adjustForm.controls.note.value,
     }).subscribe({
-      next: () => {
-        this.message.success('Đã điều chỉnh tồn kho');
+      next: (response) => {
+        const synced = response.data.tiktok_sync.filter((item) => item.status === 'synced').length;
+        const failed = response.data.tiktok_sync.filter((item) => item.status === 'failed').length;
+
+        if (failed > 0) {
+          this.message.warning(`Đã chỉnh tồn kho, nhưng ${failed} SKU TikTok cập nhật lỗi`);
+        } else if (synced > 0) {
+          this.message.success(`Đã chỉnh tồn kho và cập nhật ${synced} SKU TikTok`);
+        } else if (response.data.tiktok_sync.length > 0) {
+          this.message.success('Đã chỉnh tồn kho. TikTok đang để chế độ test, chưa đẩy thật');
+        } else {
+          this.message.success('Đã chỉnh tồn kho. Chưa có SKU TikTok liên kết để cập nhật');
+        }
+
         this.saving.set(false);
         this.adjustVisible.set(false);
         this.loadStock();

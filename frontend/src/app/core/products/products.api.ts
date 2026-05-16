@@ -10,6 +10,7 @@ import {
   ProductCopyResult,
   ProductListData,
   ProductSku,
+  PublicStockProduct,
   OperatingCost,
   OperatingFeeSetting,
   OperatingCostListData,
@@ -22,6 +23,7 @@ import {
   ReportSkuRow,
   ReportStockRow,
   SkuListData,
+  StockAdjustResult,
   StockListData,
   StockMovementListData,
   TiktokProduct,
@@ -115,8 +117,16 @@ export class ProductsApi {
     return this.http.get<ApiResponse<StockMovementListData>>(`${API_BASE_URL}/stock/movements`, { params: this.params(params) });
   }
 
-  adjustStock(payload: { product_id: number; size_option_id: number; mode: string; quantity: number; unit_cost?: number; note?: string }): Observable<ApiResponse<unknown>> {
-    return this.http.post<ApiResponse<unknown>>(`${API_BASE_URL}/stock/adjust`, payload);
+  adjustStock(payload: { product_id: number; size_option_id: number; mode: string; quantity: number; unit_cost?: number; note?: string }): Observable<ApiResponse<StockAdjustResult>> {
+    return this.http.post<ApiResponse<StockAdjustResult>>(`${API_BASE_URL}/stock/adjust`, payload);
+  }
+
+  publicStock(): Observable<ApiResponse<{ items: PublicStockProduct[] }>> {
+    return this.http.get<ApiResponse<{ items: PublicStockProduct[] }>>(`${API_BASE_URL}/public-stock`);
+  }
+
+  updatePublicComboOne(payload: { product_id: number; size_option_id: number; quantity: number }): Observable<ApiResponse<StockAdjustResult>> {
+    return this.http.post<ApiResponse<StockAdjustResult>>(`${API_BASE_URL}/public-stock/combo-1`, payload);
   }
 
   purchaseImports(params: { keyword?: string; date_from?: string; date_to?: string; page?: number; pageSize?: number }): Observable<ApiResponse<PurchaseImportListData>> {

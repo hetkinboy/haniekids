@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th5 15, 2026 lúc 12:45 PM
+-- Thời gian đã tạo: Th5 16, 2026 lúc 02:18 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -996,7 +996,8 @@ INSERT INTO `personal_access_tokens` (`id`, `user_id`, `token_hash`, `name`, `la
 (9, 1, '604104480be8cce1ee58ec9f04e36a9aba623c935fe63e2fdbed684d673dd0e7', 'api', '2026-05-14 04:04:46', '2026-06-13 04:04:09', '2026-05-14 04:04:09', '2026-05-14 04:04:46', NULL),
 (10, 1, '9c9abcd3f00a8e57e561a980ab3b23581a84f9ed1cac2995fc134be1202dd318', 'api', '2026-05-14 06:49:41', '2026-06-13 05:46:12', '2026-05-14 05:46:12', '2026-05-14 06:49:41', NULL),
 (11, 1, '9eb75b405e43721feba46b59f80888c48229c94bcb1b59c114ee6582d6f27b6c', 'api', '2026-05-15 10:45:20', '2026-06-13 08:15:03', '2026-05-14 08:15:03', '2026-05-15 10:45:20', NULL),
-(12, 1, '8a35a73fa7328e03345c72ab0cd6427ea02360e4b8aab4db54053401d62c6fc9', 'api', '2026-05-15 10:36:27', '2026-06-14 06:54:27', '2026-05-15 06:54:27', '2026-05-15 10:36:27', NULL);
+(12, 1, '8a35a73fa7328e03345c72ab0cd6427ea02360e4b8aab4db54053401d62c6fc9', 'api', '2026-05-15 10:36:27', '2026-06-14 06:54:27', '2026-05-15 06:54:27', '2026-05-15 10:36:27', NULL),
+(13, 1, '728e5c19ee0378b545b5239533abe5b0fd86f40a21e4f5e5085286cd2bac33e7', 'api', '2026-05-16 00:15:02', '2026-06-14 11:46:45', '2026-05-15 11:46:45', '2026-05-16 00:15:02', NULL);
 
 -- --------------------------------------------------------
 
@@ -1385,6 +1386,13 @@ CREATE TABLE `purchase_imports` (
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `purchase_imports`
+--
+
+INSERT INTO `purchase_imports` (`id`, `import_code`, `supplier_name`, `import_date`, `total_quantity`, `total_amount`, `note`, `created_at`, `updated_at`) VALUES
+(6, 'IMP-20260515-140757', '', '2026-05-15', 5, 120000.00, '', '2026-05-15 14:07:57', '2026-05-15 14:07:57');
+
 -- --------------------------------------------------------
 
 --
@@ -1402,6 +1410,13 @@ CREATE TABLE `purchase_import_items` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `purchase_import_items`
+--
+
+INSERT INTO `purchase_import_items` (`id`, `purchase_import_id`, `product_id`, `size_option_id`, `quantity`, `unit_cost`, `total_cost`, `created_at`, `updated_at`) VALUES
+(8, 6, 11, 109, 5, 24000.00, 120000.00, '2026-05-15 14:07:57', '2026-05-15 14:07:57');
 
 -- --------------------------------------------------------
 
@@ -1502,7 +1517,7 @@ INSERT INTO `stock_by_size` (`id`, `product_id`, `size_option_id`, `quantity_on_
 (6, 5, 9, 0, 0, 0, 38000.00, '2026-05-14 03:39:47', '2026-05-14 03:39:47'),
 (7, 6, 13, 7, 0, 7, 38000.00, '2026-05-14 03:45:43', '2026-05-14 03:45:43'),
 (8, 6, 14, 0, 0, 0, 38000.00, '2026-05-14 04:04:33', '2026-05-14 04:04:33'),
-(10, 7, 16, 16, 0, 16, 24000.00, '2026-05-14 05:53:07', '2026-05-15 09:38:00'),
+(10, 7, 16, 16, 0, 16, 24000.00, '2026-05-14 05:53:07', '2026-05-16 00:16:51'),
 (11, 7, 19, 19, 0, 19, 24000.00, '2026-05-14 05:53:30', '2026-05-15 09:38:00'),
 (12, 7, 24, 13, 0, 13, 24000.00, '2026-05-14 08:16:57', '2026-05-15 09:38:00'),
 (13, 7, 25, 15, 0, 15, 24000.00, '2026-05-14 09:46:54', '2026-05-15 09:38:00'),
@@ -1572,7 +1587,7 @@ INSERT INTO `stock_by_size` (`id`, `product_id`, `size_option_id`, `quantity_on_
 (77, 9, 80, 17, 0, 17, 37000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
 (78, 9, 81, 10, 0, 10, 45000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
 (79, 9, 82, 10, 0, 10, 50000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
-(80, 11, 109, 0, 0, 0, 26000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
+(80, 11, 109, 5, 0, 5, 24000.00, '2026-05-15 09:37:42', '2026-05-15 14:07:57'),
 (81, 11, 110, 0, 0, 0, 26000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
 (82, 11, 111, 2, 0, 2, 26000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
 (83, 11, 112, 0, 0, 0, 26000.00, '2026-05-15 09:37:42', '2026-05-15 09:38:01'),
@@ -1734,7 +1749,16 @@ INSERT INTO `stock_movements` (`id`, `product_id`, `size_option_id`, `movement_t
 (105, 13, 155, 'adjustment', 5, 0, 5, 40000.00, 'legacy_1bo_stock_import', NULL, NULL, NULL, NULL, 'Import tồn 1bo từ shopapi SKU AT-06-1bo-13', '2026-05-15 09:38:01', '2026-05-15 09:38:01'),
 (106, 13, 156, 'adjustment', 11, 0, 11, 40000.00, 'legacy_1bo_stock_import', NULL, NULL, NULL, NULL, 'Import tồn 1bo từ shopapi SKU AT-06-1bo-14', '2026-05-15 09:38:01', '2026-05-15 09:38:01'),
 (107, 13, 157, 'adjustment', 10, 0, 10, 40000.00, 'legacy_1bo_stock_import', NULL, NULL, NULL, NULL, 'Import tồn 1bo từ shopapi SKU AT-06-1bo-15', '2026-05-15 09:38:01', '2026-05-15 09:38:01'),
-(108, 13, 158, 'adjustment', 9, 0, 9, 40000.00, 'legacy_1bo_stock_import', NULL, NULL, NULL, NULL, 'Import tồn 1bo từ shopapi SKU AT-06-1bo-16', '2026-05-15 09:38:01', '2026-05-15 09:38:01');
+(108, 13, 158, 'adjustment', 9, 0, 9, 40000.00, 'legacy_1bo_stock_import', NULL, NULL, NULL, NULL, 'Import tồn 1bo từ shopapi SKU AT-06-1bo-16', '2026-05-15 09:38:01', '2026-05-15 09:38:01'),
+(109, 11, 109, 'adjustment', 5, 0, 5, 0.00, 'stock_adjustment', NULL, NULL, NULL, NULL, '', '2026-05-15 13:58:27', '2026-05-15 13:58:27'),
+(110, 11, 109, 'adjustment', 0, 5, 5, 0.00, 'stock_adjustment', NULL, NULL, NULL, NULL, '', '2026-05-15 14:03:14', '2026-05-15 14:03:14'),
+(111, 11, 109, 'adjustment', 5, 5, 10, 0.00, 'stock_adjustment', NULL, NULL, NULL, NULL, '', '2026-05-15 14:04:04', '2026-05-15 14:04:04'),
+(112, 11, 109, 'adjustment', -10, 10, 0, 0.00, 'stock_adjustment', NULL, NULL, NULL, NULL, '', '2026-05-15 14:05:22', '2026-05-15 14:05:22'),
+(113, 11, 109, 'import', 5, 0, 5, 24000.00, 'purchase_import', 6, NULL, NULL, 6, 'Import item #8', '2026-05-15 14:07:57', '2026-05-15 14:07:57'),
+(114, 7, 16, 'adjustment', -11, 16, 5, 24000.00, 'public_combo_1_adjustment', NULL, NULL, NULL, NULL, 'Public stock page set combo 1 quantity', '2026-05-16 00:15:46', '2026-05-16 00:15:46'),
+(115, 7, 16, 'adjustment', 11, 5, 16, 24000.00, 'public_combo_1_adjustment', NULL, NULL, NULL, NULL, 'Public stock page set combo 1 quantity', '2026-05-16 00:16:08', '2026-05-16 00:16:08'),
+(116, 7, 16, 'adjustment', -11, 16, 5, 24000.00, 'public_combo_1_adjustment', NULL, NULL, NULL, NULL, 'Public stock page set combo 1 quantity', '2026-05-16 00:16:36', '2026-05-16 00:16:36'),
+(117, 7, 16, 'adjustment', 11, 5, 16, 24000.00, 'public_combo_1_adjustment', NULL, NULL, NULL, NULL, 'Public stock page set combo 1 quantity', '2026-05-16 00:16:51', '2026-05-16 00:16:51');
 
 -- --------------------------------------------------------
 
@@ -1800,7 +1824,7 @@ CREATE TABLE `tiktok_shop_connections` (
 --
 
 INSERT INTO `tiktok_shop_connections` (`id`, `shop_name`, `shop_id`, `shop_cipher`, `app_key`, `app_secret`, `base_url`, `auth_base_url`, `access_token`, `refresh_token`, `access_token_expires_at`, `refresh_token_expires_at`, `status`, `last_synced_at`, `last_error`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'hanide kids', '7495370608156969818', 'ROW_R8X6nAAAAAAbjB0jBrNrGoshOAyUWgMy', '6co1ckgdf81l4', '856c01b85370ee221c89b8c04e249584d572bf68', 'https://open-api.tiktokglobalshop.com', 'https://auth.tiktok-shops.com', 'ROW_bypW6wAAAACg4ndkYIckHVeZOLjufPndEtSlvITy7R3mXCR6JcrGm9Q6mZZ8AGycT_lIkib49pQ9Hl0I5yahIq_VncyHkDJkD5Tpak1VOxXv-lyOb93R740P6FGBa9WB-nshh1jVgXR2OQNQuoAvGGUkqiumgh2rFD8mNmIS9Oadlx7W1oJbYg', NULL, NULL, NULL, 'active', '2026-05-15 09:08:26', NULL, '2026-05-15 02:58:13', '2026-05-15 09:08:26', NULL);
+(1, 'hanide kids', '7495370608156969818', 'ROW_R8X6nAAAAAAbjB0jBrNrGoshOAyUWgMy', '6co1ckgdf81l4', '856c01b85370ee221c89b8c04e249584d572bf68', 'https://open-api.tiktokglobalshop.com', 'https://auth.tiktok-shops.com', 'ROW_bypW6wAAAACg4ndkYIckHVeZOLjufPndEtSlvITy7R3mXCR6JcrGm9Q6mZZ8AGycT_lIkib49pQ9Hl0I5yahIq_VncyHkDJkD5Tpak1VOxXv-lyOb93R740P6FGBa9WB-nshh1jVgXR2OQNQuoAvGGUkqiumgh2rFD8mNmIS9Oadlx7W1oJbYg', NULL, NULL, NULL, 'active', '2026-05-16 00:16:52', NULL, '2026-05-15 02:58:13', '2026-05-16 00:16:52', NULL);
 
 -- --------------------------------------------------------
 
@@ -1829,9 +1853,9 @@ CREATE TABLE `tiktok_skus` (
 --
 
 INSERT INTO `tiktok_skus` (`id`, `tiktok_product_id`, `product_sku_id`, `tiktok_sku_id`, `seller_sku`, `name`, `tiktok_price`, `tiktok_inventory_quantity`, `tiktok_warehouse_id`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(2, 3, 19, '1732827297944995674', 'AT-01-2bo-5', 'AT-01-2bo-5', 98000.00, 8, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-14 10:44:22', NULL),
-(3, 3, 20, '1732827297945061210', 'AT-01-3bo-5', 'AT-01-3bo-5', 128000.00, 5, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-14 10:44:22', NULL),
-(4, 3, 21, '1732827297945126746', 'AT-01-5bo-5', 'AT-01-5bo-5', 195000.00, 3, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-14 10:44:22', NULL),
+(2, 3, 19, '1732827297944995674', 'AT-01-2bo-5', 'AT-01-2bo-5', 98000.00, 8, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-16 00:16:51', NULL),
+(3, 3, 20, '1732827297945061210', 'AT-01-3bo-5', 'AT-01-3bo-5', 128000.00, 5, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-16 00:16:52', NULL),
+(4, 3, 21, '1732827297945126746', 'AT-01-5bo-5', 'AT-01-5bo-5', 195000.00, 3, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-16 00:16:52', NULL),
 (5, 3, 22, '1732827297945192282', 'AT-01-2bo-6', 'AT-01-2bo-6', 105000.00, 9, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-14 10:44:22', NULL),
 (6, 3, 23, '1732827297945257818', 'AT-01-3bo-6', 'AT-01-3bo-6', 131000.00, 6, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-14 10:44:22', NULL),
 (7, 3, 24, '1732827297945323354', 'AT-01-5bo-6', 'AT-01-5bo-6', 197000.00, 3, '7359440537135859461', 'active', '2026-05-14 10:44:22', '2026-05-14 10:44:22', NULL),
@@ -2003,8 +2027,8 @@ INSERT INTO `tiktok_skus` (`id`, `tiktok_product_id`, `product_sku_id`, `tiktok_
 (173, 5, 190, '1735569788715763546', 'AT-03-2bo-4XL', 'AT-03-2bo-4XL', 190000.00, 5, '7359440537135859461', 'active', '2026-05-15 03:14:25', '2026-05-15 03:14:25', NULL),
 (174, 5, 191, '1735569788715829082', 'AT-03-3bo-4XL', 'AT-03-3bo-4XL', 265000.00, 3, '7359440537135859461', 'active', '2026-05-15 03:14:25', '2026-05-15 03:14:25', NULL),
 (175, 5, 192, '1735569788715894618', 'AT-03-5bo-4XL', 'AT-03-5bo-4XL', 410000.00, 2, '7359440537135859461', 'active', '2026-05-15 03:14:25', '2026-05-15 03:14:25', NULL),
-(176, 6, 254, '1731146501928160090', 'AT-04-3bo-5', 'AT-04-3bo-5', 99000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 09:27:29', NULL),
-(177, 6, 255, '1731146501928225626', 'AT-04-5bo-5', 'AT-04-5bo-5', 165000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 09:27:29', NULL),
+(176, 6, 254, '1731146501928160090', 'AT-04-3bo-5', 'AT-04-3bo-5', 99000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 14:05:23', NULL),
+(177, 6, 255, '1731146501928225626', 'AT-04-5bo-5', 'AT-04-5bo-5', 165000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 14:05:23', NULL),
 (178, 6, 257, '1731146501928291162', 'AT-04-3bo-6', 'AT-04-3bo-6', 107000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 09:27:29', NULL),
 (179, 6, 258, '1731146501928356698', 'AT-04-5bo-6', 'AT-04-5bo-6', 175000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 09:27:29', NULL),
 (180, 6, 260, '1731146501928422234', 'AT-04-3bo-7', 'AT-04-3bo-7', 110000.00, 0, '7359440537135859461', 'active', '2026-05-15 09:27:29', '2026-05-15 09:27:29', NULL),
@@ -2128,7 +2152,9 @@ CREATE TABLE `tiktok_webhook_events` (
 
 INSERT INTO `tiktok_webhook_events` (`id`, `connection_id`, `shop_id`, `event_type`, `order_id`, `order_status`, `payload_json`, `process_status`, `error_message`, `received_at`, `processed_at`, `created_at`, `updated_at`) VALUES
 (1, 1, '7495370608156969818', '1', '584027517678749225', 'AWAITING_SHIPMENT', '{\"type\":1,\"tts_notification_id\":\"7639768052772407058\",\"shop_id\":\"7495370608156969818\",\"timestamp\":1778772114,\"data\":{\"is_on_hold_order\":false,\"order_id\":\"584027517678749225\",\"order_status\":\"AWAITING_SHIPMENT\",\"update_time\":1778772112}}', 'processed', NULL, '2026-05-15 08:58:14', '2026-05-15 08:58:14', '2026-05-15 08:58:14', '2026-05-15 08:58:14'),
-(2, 1, '7495370608156969818', '1', '584027517678749225', 'AWAITING_SHIPMENT', '{\"type\":1,\"tts_notification_id\":\"7639768052772407058\",\"shop_id\":\"7495370608156969818\",\"timestamp\":1778772114,\"data\":{\"is_on_hold_order\":false,\"order_id\":\"584027517678749225\",\"order_status\":\"AWAITING_SHIPMENT\",\"update_time\":1778772112}}', 'processed', NULL, '2026-05-15 09:08:25', '2026-05-15 09:08:26', '2026-05-15 09:08:25', '2026-05-15 09:08:26');
+(2, 1, '7495370608156969818', '1', '584027517678749225', 'AWAITING_SHIPMENT', '{\"type\":1,\"tts_notification_id\":\"7639768052772407058\",\"shop_id\":\"7495370608156969818\",\"timestamp\":1778772114,\"data\":{\"is_on_hold_order\":false,\"order_id\":\"584027517678749225\",\"order_status\":\"AWAITING_SHIPMENT\",\"update_time\":1778772112}}', 'processed', NULL, '2026-05-15 09:08:25', '2026-05-15 09:08:26', '2026-05-15 09:08:25', '2026-05-15 09:08:26'),
+(3, 1, '7495370608156969818', '1', '5840352946919519401', 'AWAITING_SHIPMENT', '{\"type\":1,\"tts_notification_id\":\"7639991567540897556\",\"shop_id\":\"7495370608156969818\",\"timestamp\":1778824154,\"data\":{\"is_on_hold_order\":false,\"order_id\":\"5840352946919519401\",\"order_status\":\"AWAITING_SHIPMENT\",\"update_time\":1778824153}}', 'received', NULL, '2026-05-15 14:23:34', NULL, '2026-05-15 14:23:34', '2026-05-15 14:23:34'),
+(4, 1, '7495370608156969818', '1', '58403529434124126919519401', 'AWAITING_SHIPMENT', '{\"type\":1,\"tts_notification_id\":\"7639991567540897556\",\"shop_id\":\"7495370608156969818\",\"timestamp\":1778824154,\"data\":{\"is_on_hold_order\":false,\"order_id\":\"58403529434124126919519401\",\"order_status\":\"AWAITING_SHIPMENT\",\"update_time\":1778824153}}', 'received', NULL, '2026-05-15 14:24:02', NULL, '2026-05-15 14:24:02', '2026-05-15 14:24:02');
 
 -- --------------------------------------------------------
 
@@ -2154,7 +2180,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `role_id`, `name`, `email`, `password_hash`, `status`, `last_login_at`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 'Admin', 'admin@example.com', '$2y$10$UHD3fSELpyBr8rr7TinIBOy3wxib9xtfDILbDc7.BSmV66jzefLw.', 'active', '2026-05-15 06:54:27', '2026-05-14 03:17:45', '2026-05-15 06:54:27', NULL),
+(1, 1, 'Admin', 'admin@example.com', '$2y$10$UHD3fSELpyBr8rr7TinIBOy3wxib9xtfDILbDc7.BSmV66jzefLw.', 'active', '2026-05-15 11:46:45', '2026-05-14 03:17:45', '2026-05-15 11:46:45', NULL),
 (2, 2, 'Nhan vien', 'staff@example.com', '$2y$10$hi4/RrfaGfXf2oaJo85jguC.KmNA7O1v.8jX2l8g/i9xKFHNHZk5C', 'active', '2026-05-14 03:24:41', '2026-05-14 03:17:45', '2026-05-14 03:24:41', NULL);
 
 -- --------------------------------------------------------
@@ -2601,7 +2627,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT cho bảng `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT cho bảng `products`
@@ -2619,13 +2645,13 @@ ALTER TABLE `product_skus`
 -- AUTO_INCREMENT cho bảng `purchase_imports`
 --
 ALTER TABLE `purchase_imports`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT cho bảng `purchase_import_items`
 --
 ALTER TABLE `purchase_import_items`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT cho bảng `roles`
@@ -2655,7 +2681,7 @@ ALTER TABLE `stock_by_size`
 -- AUTO_INCREMENT cho bảng `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=118;
 
 --
 -- AUTO_INCREMENT cho bảng `tiktok_products`
@@ -2679,7 +2705,7 @@ ALTER TABLE `tiktok_skus`
 -- AUTO_INCREMENT cho bảng `tiktok_webhook_events`
 --
 ALTER TABLE `tiktok_webhook_events`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT cho bảng `users`
