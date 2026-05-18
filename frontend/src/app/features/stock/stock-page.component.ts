@@ -14,12 +14,14 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { Product, StockBySize, StockMovement } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { DisableNumberWheelDirective } from '../../core/directives/disable-number-wheel.directive';
 import { ProductsApi } from '../../core/products/products.api';
 
 @Component({
   selector: 'app-stock-page',
   imports: [
     DecimalPipe,
+    DisableNumberWheelDirective,
     ReactiveFormsModule,
     NzButtonModule,
     NzFormModule,

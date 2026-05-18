@@ -9,8 +9,8 @@ $routes->get('/', 'Home::index');
 
 $routes->group('api', static function ($routes) {
     $routes->get('health', 'Api\HealthController::index');
-    $routes->get('public-stock', 'Api\StockController::publicMatrix');
-    $routes->post('public-stock/combo-1', 'Api\StockController::publicSetComboOne');
+    $routes->get('public-stock', 'Api\StockController::publicMatrix', ['filter' => 'auth']);
+    $routes->post('public-stock/combo-1', 'Api\StockController::publicSetComboOne', ['filter' => 'auth']);
 
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->get('auth/me', 'Api\AuthController::me', ['filter' => 'auth']);

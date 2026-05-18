@@ -32,7 +32,9 @@ class AuthController extends BaseController
         }
 
         $plainToken = bin2hex(random_bytes(32));
-        $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+        $expiresAt = ($user['role'] ?? null) === 'admin'
+            ? null
+            : date('Y-m-d H:i:s', strtotime('+30 days'));
 
         (new PersonalAccessTokenModel())->insert([
             'user_id'    => $user['id'],

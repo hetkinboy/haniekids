@@ -14,6 +14,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { Product, PurchaseImport, VariantOption } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { DisableNumberWheelDirective } from '../../core/directives/disable-number-wheel.directive';
 import { ProductsApi } from '../../core/products/products.api';
 import { DATE_RANGE_OPTIONS, DateRangePreset, resolveDateRange } from '../../core/utils/date-range';
 
@@ -24,10 +25,25 @@ interface ImportLine {
   unit_cost: number;
 }
 
+interface ImportSizeDraft {
+  size_option_id: number;
+  size_name: string;
+  quantity: number | null;
+  unit_cost: number;
+}
+
+interface CostBreakdownLine {
+  unit_cost: number;
+  quantity: number;
+  amount: number;
+  sizes: string[];
+}
+
 @Component({
   selector: 'app-purchase-imports',
   imports: [
     DecimalPipe,
+    DisableNumberWheelDirective,
     FormsModule,
     ReactiveFormsModule,
     NzButtonModule,
@@ -53,6 +69,8 @@ export class PurchaseImportsComponent implements OnInit {
   readonly dateRangeOptions = DATE_RANGE_OPTIONS;
   readonly products = signal<Product[]>([]);
   readonly sizes = signal<VariantOption[]>([]);
+  readonly sizeDrafts = signal<ImportSizeDraft[]>([]);
+  readonly sizeNames = signal<Record<number, string>>({});
   readonly lines = signal<ImportLine[]>([]);
   readonly selectedImport = signal<PurchaseImport | null>(null);
   readonly loading = signal(false);
@@ -65,10 +83,17 @@ export class PurchaseImportsComponent implements OnInit {
   readonly pageSize = signal(20);
   readonly summary = signal({ total_quantity: 0, total_amount: 0 });
   readonly totalAmount = computed(() => this.lines().reduce((sum, line) => sum + line.quantity * line.unit_cost, 0));
+  readonly currentProductQuantity = computed(() => this.sizeDrafts().reduce((sum, line) => sum + (Number(line.quantity) || 0), 0));
+  readonly currentProductAmount = computed(() =>
+    this.sizeDrafts().reduce((sum, line) => sum + (Number(line.quantity) || 0) * line.unit_cost, 0)
+  );
+  readonly currentProductCostBreakdown = computed(() => this.groupDraftsByCost(this.sizeDrafts()));
+  readonly importCostBreakdown = computed(() => this.groupLinesByCost(this.lines()));
+  readonly selectedImportCostBreakdown = computed(() => this.groupImportItemsByCost(this.selectedImport()?.items ?? []));
   readonly importedQuantity = computed(() => this.summary().total_quantity);
   readonly importedAmount = computed(() => this.summary().total_amount);
 
-  readonly draft: ImportLine = { product_id: 0, size_option_id: 0, quantity: 1, unit_cost: 0 };
+  readonly draft = { product_id: 0 };
   readonly filters = this.fb.nonNullable.group({
     keyword: [''],
     date_preset: ['today' as DateRangePreset],
@@ -121,13 +146,30 @@ export class PurchaseImportsComponent implements OnInit {
   }
 
   loadSizes(productId: number): void {
+    this.draft.product_id = productId;
+    this.sizeDrafts.set([]);
+
     this.api.variantGroups(productId).subscribe({
       next: (response) => {
         const sizeGroup = response.data.items.find((group) => group.is_stock_dimension);
-        this.sizes.set(sizeGroup?.options ?? []);
-        this.draft.size_option_id = this.sizes()[0]?.id ?? 0;
+        const options = sizeGroup?.options ?? [];
+        this.sizes.set(options);
+        this.sizeNames.update((names) => ({
+          ...names,
+          ...Object.fromEntries(options.map((option) => [option.id, option.name])),
+        }));
+        this.sizeDrafts.set(options.map((option) => {
+          const existingLine = this.lines().find((line) => line.product_id === productId && line.size_option_id === option.id);
+
+          return {
+            size_option_id: option.id,
+            size_name: option.name,
+            quantity: existingLine?.quantity ?? null,
+            unit_cost: existingLine?.unit_cost ?? option.base_cost ?? 0,
+          };
+        }));
       },
-      error: () => this.message.error('KhÃ´ng táº£i Ä‘Æ°á»£c size'),
+      error: () => this.message.error('Không tải được size'),
     });
   }
 
@@ -137,8 +179,7 @@ export class PurchaseImportsComponent implements OnInit {
     this.form.reset({ import_code: '', import_date: new Date().toISOString().slice(0, 10), supplier_name: '', note: '' });
     const first = this.products()[0];
     this.draft.product_id = first?.id ?? 0;
-    this.draft.quantity = 1;
-    this.draft.unit_cost = 0;
+    this.sizeDrafts.set([]);
     if (first) {
       this.loadSizes(first.id);
     }
@@ -146,12 +187,13 @@ export class PurchaseImportsComponent implements OnInit {
   }
 
   addLine(): void {
-    if (!this.draft.product_id || !this.draft.size_option_id || this.draft.quantity < 1) {
-      this.message.warning('Chá»n sáº£n pháº©m, size vÃ  sá»‘ lÆ°á»£ng');
+    if (!this.draft.product_id || this.currentProductQuantity() < 1) {
+      this.message.warning('Chọn sản phẩm và nhập số lượng cho ít nhất 1 size');
       return;
     }
 
-    this.lines.update((items) => [...items, { ...this.draft }]);
+    this.syncCurrentProductLines();
+    this.message.success('Đã cập nhật size vào phiếu');
   }
 
   removeLine(index: number): void {
@@ -192,8 +234,6 @@ export class PurchaseImportsComponent implements OnInit {
 
         const firstProductId = this.lines()[0]?.product_id ?? this.products()[0]?.id ?? 0;
         this.draft.product_id = firstProductId;
-        this.draft.quantity = 1;
-        this.draft.unit_cost = 0;
         if (firstProductId) {
           this.loadSizes(firstProductId);
         }
@@ -204,6 +244,8 @@ export class PurchaseImportsComponent implements OnInit {
   }
 
   save(): void {
+    this.syncCurrentProductLines();
+
     if (this.form.invalid || this.lines().length === 0) {
       this.message.warning('Nháº­p thÃ´ng tin phiáº¿u vÃ  Ã­t nháº¥t 1 dÃ²ng hÃ ng');
       return;
@@ -236,7 +278,114 @@ export class PurchaseImportsComponent implements OnInit {
   }
 
   sizeLabel(id: number): string {
-    return this.sizes().find((item) => item.id === id)?.name ?? String(id);
+    return this.sizeNames()[id] ?? this.sizes().find((item) => item.id === id)?.name ?? String(id);
+  }
+
+  costBreakdownLabel(line: CostBreakdownLine): string {
+    return `${line.quantity} x ${this.formatNumber(line.unit_cost)} = ${this.formatNumber(line.amount)}`;
+  }
+
+  updateSizeQuantity(sizeOptionId: number, quantity: number | null): void {
+    this.sizeDrafts.update((items) => items.map((item) => (
+      item.size_option_id === sizeOptionId ? { ...item, quantity: quantity === null ? null : Number(quantity) } : item
+    )));
+    this.syncCurrentProductLines();
+  }
+
+  updateSizeCost(sizeOptionId: number, unitCost: number | null): void {
+    this.sizeDrafts.update((items) => items.map((item) => (
+      item.size_option_id === sizeOptionId ? { ...item, unit_cost: Number(unitCost) || 0 } : item
+    )));
+    this.syncCurrentProductLines();
+  }
+
+  private syncCurrentProductLines(): void {
+    const productId = this.draft.product_id;
+
+    if (!productId) {
+      return;
+    }
+
+    const currentLines = this.sizeDrafts()
+      .filter((item) => (Number(item.quantity) || 0) > 0)
+      .map((item) => ({
+        product_id: productId,
+        size_option_id: item.size_option_id,
+        quantity: Number(item.quantity) || 0,
+        unit_cost: item.unit_cost,
+      }));
+
+    this.lines.update((items) => [
+      ...items.filter((item) => item.product_id !== productId),
+      ...currentLines,
+    ]);
+  }
+
+  private groupDraftsByCost(drafts: ImportSizeDraft[]): CostBreakdownLine[] {
+    const groups = new Map<number, CostBreakdownLine>();
+
+    drafts.forEach((draft) => {
+      const quantity = Number(draft.quantity) || 0;
+
+      if (quantity <= 0) {
+        return;
+      }
+
+      const unitCost = Number(draft.unit_cost) || 0;
+      const existing = groups.get(unitCost) ?? { unit_cost: unitCost, quantity: 0, amount: 0, sizes: [] };
+      existing.quantity += quantity;
+      existing.amount += quantity * unitCost;
+      existing.sizes.push(draft.size_name);
+      groups.set(unitCost, existing);
+    });
+
+    return Array.from(groups.values()).sort((a, b) => a.unit_cost - b.unit_cost);
+  }
+
+  private groupLinesByCost(lines: ImportLine[]): CostBreakdownLine[] {
+    const groups = new Map<number, CostBreakdownLine>();
+
+    lines.forEach((line) => {
+      const quantity = Number(line.quantity) || 0;
+
+      if (quantity <= 0) {
+        return;
+      }
+
+      const unitCost = Number(line.unit_cost) || 0;
+      const existing = groups.get(unitCost) ?? { unit_cost: unitCost, quantity: 0, amount: 0, sizes: [] };
+      existing.quantity += quantity;
+      existing.amount += quantity * unitCost;
+      existing.sizes.push(this.sizeLabel(line.size_option_id));
+      groups.set(unitCost, existing);
+    });
+
+    return Array.from(groups.values()).sort((a, b) => a.unit_cost - b.unit_cost);
+  }
+
+  private groupImportItemsByCost(items: PurchaseImport['items']): CostBreakdownLine[] {
+    const groups = new Map<number, CostBreakdownLine>();
+
+    (items ?? []).forEach((item) => {
+      const quantity = Number(item.quantity) || 0;
+
+      if (quantity <= 0) {
+        return;
+      }
+
+      const unitCost = Number(item.unit_cost) || 0;
+      const existing = groups.get(unitCost) ?? { unit_cost: unitCost, quantity: 0, amount: 0, sizes: [] };
+      existing.quantity += quantity;
+      existing.amount += quantity * unitCost;
+      existing.sizes.push(item.size_name ?? String(item.size_option_id));
+      groups.set(unitCost, existing);
+    });
+
+    return Array.from(groups.values()).sort((a, b) => a.unit_cost - b.unit_cost);
+  }
+
+  private formatNumber(value: number): string {
+    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value);
   }
 
   private applyDatePreset(preset: DateRangePreset): void {

@@ -14,6 +14,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { OperatingCost, OperatingFeeSetting } from '../../core/api/api.models';
+import { DisableNumberWheelDirective } from '../../core/directives/disable-number-wheel.directive';
 import { ProductsApi } from '../../core/products/products.api';
 import { DATE_RANGE_OPTIONS, DateRangePreset, resolveDateRange } from '../../core/utils/date-range';
 
@@ -24,6 +25,7 @@ const PERIOD_TYPES = ['day', 'month'];
   selector: 'app-operating-costs',
   imports: [
     DecimalPipe,
+    DisableNumberWheelDirective,
     FormsModule,
     ReactiveFormsModule,
     NzButtonModule,

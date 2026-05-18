@@ -58,15 +58,25 @@
                     <td>
                       @if (combo || comboColumn === 1) {
                         @let quantity = displayQuantity(row, comboColumn, combo);
-                        <div [ngClass]="['combo-value', stockClass(quantity)]" [class.editable]="comboColumn === 1">
+                        <div
+                          [ngClass]="['combo-value', stockClass(quantity)]"
+                          [class.editable]="comboColumn === 1"
+                          [class.editing]="comboColumn === 1 && editingKey() === rowKey(row)"
+                        >
                           @if (comboColumn === 1 && editingKey() === rowKey(row)) {
-                            <nz-input-number
+                            <input
+                              nz-input
                               class="combo-input"
+                              type="tel"
+                              inputmode="numeric"
+                              pattern="[0-9]*"
+                              autocomplete="off"
+                              enterkeyhint="done"
+                              [attr.data-edit-key]="rowKey(row)"
                               [ngModel]="draftValue(row)"
                               (ngModelChange)="setDraft(row, $event)"
-                              [nzMin]="0"
-                              (keydown.enter)="save(product, row)"
-                              (keydown.escape)="cancelEdit(row)"
+                              (keydown)="onQuantityKeydown($event, product, row)"
+                              (paste)="onQuantityPaste($event, row)"
                             />
                             <div class="inline-actions">
                               <button
@@ -102,4 +112,8 @@
       }
     </nz-tabs>
   </section>
+
+  @if (keyboardSpacerHeight() > 0) {
+    <div class="keyboard-spacer" [style.height.px]="keyboardSpacerHeight()"></div>
+  }
 </main>

@@ -18,12 +18,14 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { VariantGroup, VariantOption } from '../../core/api/api.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { DisableNumberWheelDirective } from '../../core/directives/disable-number-wheel.directive';
 import { ProductsApi } from '../../core/products/products.api';
 
 @Component({
   selector: 'app-product-variants',
   imports: [
     DecimalPipe,
+    DisableNumberWheelDirective,
     ReactiveFormsModule,
     RouterLink,
     NzButtonModule,

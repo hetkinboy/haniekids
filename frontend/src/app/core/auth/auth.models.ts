@@ -10,7 +10,7 @@ export interface AuthUser {
 export interface LoginData {
   token: string;
   token_type: 'Bearer';
-  expires_at: string;
+  expires_at: string | null;
   user: AuthUser;
 }
 

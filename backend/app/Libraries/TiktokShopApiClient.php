@@ -15,6 +15,7 @@ class TiktokShopApiClient
     private TiktokProductModel $products;
     private TiktokSkuModel $skus;
     private CURLRequest $http;
+    private const TOKEN_REFRESH_BUFFER_SECONDS = 300;
 
     public function __construct()
     {
@@ -181,20 +182,40 @@ class TiktokShopApiClient
     public function request(string $method, string $path, array $query = [], ?array $body = null, ?int $connectionId = null): array
     {
         $connection = $this->connection($connectionId);
+        if ($this->shouldRefreshAccessToken($connection)) {
+            $this->refreshToken((int) $connection['id']);
+            $connection = $this->connection((int) $connection['id']);
+        }
+
         $bodyJson = $body === null ? '' : json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         if ($bodyJson === false) {
             throw new RuntimeException('Could not encode TikTok request body.');
         }
 
+        $data = $this->sendSignedRequest($connection, $method, $path, $query, $bodyJson);
+
+        if ($this->isAccessTokenExpiredResponse($data) && ! empty($connection['refresh_token'])) {
+            $this->refreshToken((int) $connection['id']);
+            $connection = $this->connection((int) $connection['id']);
+            $data = $this->sendSignedRequest($connection, $method, $path, $query, $bodyJson);
+        }
+
+        return $data;
+    }
+
+    private function sendSignedRequest(array $connection, string $method, string $path, array $query, string $bodyJson): array
+    {
+        $method = strtoupper($method);
+
         $query = array_merge([
             'app_key'     => $connection['app_key'],
             'timestamp'   => time(),
             'shop_cipher' => $connection['shop_cipher'],
         ], $query);
-        $query['sign'] = $this->signature($path, $query, $connection['app_secret'], strtoupper($method), 'normal', $bodyJson);
+        $query['sign'] = $this->signature($path, $query, $connection['app_secret'], $method, 'normal', $bodyJson);
 
-        $response = $this->http->request(strtoupper($method), rtrim($connection['base_url'], '/') . $path, [
+        $response = $this->http->request($method, rtrim($connection['base_url'], '/') . $path, [
             'query' => $query,
             'body' => $bodyJson,
             'headers' => array_filter([
@@ -217,6 +238,40 @@ class TiktokShopApiClient
         }
 
         return $data;
+    }
+
+    private function shouldRefreshAccessToken(array $connection): bool
+    {
+        if (empty($connection['refresh_token'])) {
+            return false;
+        }
+
+        if (empty($connection['access_token']) || empty($connection['access_token_expires_at'])) {
+            return true;
+        }
+
+        $expiresAt = strtotime((string) $connection['access_token_expires_at']);
+
+        if ($expiresAt === false) {
+            return true;
+        }
+
+        return $expiresAt <= time() + self::TOKEN_REFRESH_BUFFER_SECONDS;
+    }
+
+    private function isAccessTokenExpiredResponse(array $data): bool
+    {
+        $code = strtolower((string) ($data['code'] ?? ''));
+        $message = strtolower((string) ($data['message'] ?? ''));
+        $raw = strtolower(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
+
+        foreach (['access_token', 'token', 'expire', 'expired', 'invalid'] as $needle) {
+            if (str_contains($code, $needle) || str_contains($message, $needle)) {
+                return str_contains($raw, 'token') || str_contains($raw, 'access_token');
+            }
+        }
+
+        return str_contains($raw, 'access_token') && (str_contains($raw, 'expire') || str_contains($raw, 'expired') || str_contains($raw, 'invalid'));
     }
 
     public function signature(string $path, array|string $params, string $appSecret, string $method = 'GET', string $requestType = 'normal', string $body = ''): string

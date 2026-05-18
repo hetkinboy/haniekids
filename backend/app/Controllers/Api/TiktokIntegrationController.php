@@ -776,6 +776,7 @@ class TiktokIntegrationController extends BaseController
         $orderStatus = $this->extractWebhookOrderStatus($payload);
         $processStatus = $connection === null ? 'rejected' : 'received';
         $errorMessage = $connection === null ? 'Webhook shop_id is not configured or inactive.' : null;
+        $receivedAt = $this->webhookTimestampToDate($payload) ?? date('Y-m-d H:i:s');
 
         $eventId = $this->webhookEvents->insert([
             'connection_id'  => $connection['id'] ?? null,
@@ -786,7 +787,7 @@ class TiktokIntegrationController extends BaseController
             'payload_json'   => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'process_status' => $processStatus,
             'error_message'  => $errorMessage,
-            'received_at'    => date('Y-m-d H:i:s'),
+            'received_at'    => $receivedAt,
         ], true);
 
         log_message('info', 'TikTok webhook received #' . $eventId . ': ' . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -853,6 +854,16 @@ class TiktokIntegrationController extends BaseController
     private function extractWebhookShopId(array $payload): ?string
     {
         return $this->emptyToNull($payload['shop_id'] ?? ($payload['data']['shop_id'] ?? null));
+    }
+
+    private function webhookTimestampToDate(array $payload): ?string
+    {
+        $value = $payload['timestamp']
+            ?? $payload['data']['update_time']
+            ?? $payload['data']['create_time']
+            ?? null;
+
+        return $this->timestampToDate($value);
     }
 
     private function legacyDateRange(mixed $start, mixed $end): array
@@ -1031,7 +1042,11 @@ class TiktokIntegrationController extends BaseController
         }
 
         $this->orders->db->transStart();
-        $this->applyOrderStockState((int) $order['id'], $status);
+
+        if ($status === 'cancelled') {
+            $this->applyOrderStockState((int) $order['id'], $status);
+        }
+
         $updated = $order['status'] !== $status
             ? (bool) $this->orders->update((int) $order['id'], ['status' => $status])
             : true;
@@ -1106,8 +1121,6 @@ class TiktokIntegrationController extends BaseController
             'shipping_fee'         => $profit['shipping_fee'],
             'cod_amount'           => $customerPaid,
             'net_revenue'          => $profit['net_revenue'],
-            'stock_deducted'       => 0,
-            'stock_returned'       => 0,
             'return_fee'           => $profit['return_fee'],
             'note'                 => $this->buildTiktokOrderNote($order),
         ];
@@ -1118,34 +1131,32 @@ class TiktokIntegrationController extends BaseController
 
         if ($existing) {
             $localOrderId = (int) $existing['id'];
-            $stockAlreadyDeducted = (int) ($existing['stock_deducted'] ?? 0) === 1 && (int) ($existing['stock_returned'] ?? 0) === 0;
+            $this->orders->update($localOrderId, $orderData);
 
-            if ($stockAlreadyDeducted) {
-                $orderData['stock_deducted'] = 1;
-                $orderData['stock_returned'] = 0;
-                $this->orders->update($localOrderId, $orderData);
-
-                if (in_array($status, ['cancelled', 'returned'], true)) {
-                    $this->applyOrderStockState($localOrderId, $status);
-                }
-
-                $this->orders->db->transComplete();
-
-                if ($this->orders->db->transStatus() === false) {
-                    throw new RuntimeException('Could not import TikTok order ' . $tiktokOrderId);
-                }
-
-                return;
+            if ($status === 'cancelled') {
+                $this->applyOrderStockState($localOrderId, $status);
             }
 
-            $this->orders->update($localOrderId, $orderData);
-        } else {
-            $localOrderId = (int) $this->orders->insert($orderData, true);
+            $this->orders->db->transComplete();
+
+            if ($this->orders->db->transStatus() === false) {
+                throw new RuntimeException('Could not import TikTok order ' . $tiktokOrderId);
+            }
+
+            return;
         }
+
+        $orderData['stock_deducted'] = 0;
+        $orderData['stock_returned'] = $status === 'cancelled' ? 1 : 0;
+        $localOrderId = (int) $this->orders->insert($orderData, true);
 
         $this->syncTiktokOrderItems($localOrderId, $lineItems);
         $this->recalculateImportedOrderTotals($localOrderId);
-        $this->applyOrderStockState($localOrderId, $status);
+
+        if ($this->shouldDeductStockForNewTiktokOrder($status)) {
+            $this->applyOrderStockState($localOrderId, $status);
+        }
+
         $this->orders->db->transComplete();
 
         if ($this->orders->db->transStatus() === false) {
@@ -1237,7 +1248,7 @@ class TiktokIntegrationController extends BaseController
             return;
         }
 
-        if (in_array($status, ['cancelled', 'returned'], true)) {
+        if ($status === 'cancelled') {
             if ((int) ($order['stock_deducted'] ?? 0) === 1 && (int) ($order['stock_returned'] ?? 0) === 0) {
                 $this->returnImportedOrderStock($order, 'status');
             }
@@ -1250,9 +1261,14 @@ class TiktokIntegrationController extends BaseController
             return;
         }
 
-        if ((int) ($order['stock_deducted'] ?? 0) === 0) {
+        if ($this->shouldDeductStockForNewTiktokOrder($status) && (int) ($order['stock_deducted'] ?? 0) === 0) {
             $this->deductImportedOrderStock($order);
         }
+    }
+
+    private function shouldDeductStockForNewTiktokOrder(string $status): bool
+    {
+        return in_array($status, ['pending', 'confirmed', 'shipped'], true);
     }
 
     private function deductImportedOrderStock(array $order): void
