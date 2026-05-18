@@ -262,6 +262,18 @@ export interface OrderItem {
   profit: number;
 }
 
+export interface TiktokOrderLineItem {
+  seller_sku?: string | null;
+  tiktok_sku_id?: string | null;
+  sku_name?: string | null;
+  product_name?: string | null;
+  quantity: number;
+  sale_price: number;
+  original_price: number;
+  matched_sku_id?: number | null;
+  matched_sku_code?: string | null;
+}
+
 export interface Order {
   id: number;
   order_code: string;
@@ -293,6 +305,7 @@ export interface Order {
   note?: string | null;
   profit_breakdown?: OrderProfitBreakdown;
   items?: OrderItem[];
+  tiktok_line_items?: TiktokOrderLineItem[];
 }
 
 export interface OrderProfitBreakdown {

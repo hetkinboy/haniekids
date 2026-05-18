@@ -93,6 +93,7 @@ class OrdersController extends BaseController
 
         $data = $this->formatOrder($order);
         $data['items'] = $this->items->where('order_id', $id)->orderBy('id', 'ASC')->findAll();
+        $data['tiktok_line_items'] = $this->tiktokLineItemsFromRaw($order);
 
         return api_success('Success', $data);
     }
@@ -403,5 +404,45 @@ class OrdersController extends BaseController
         ];
 
         return $order;
+    }
+
+    private function tiktokLineItemsFromRaw(array $order): array
+    {
+        $raw = json_decode((string) ($order['tiktok_raw_json'] ?? ''), true);
+
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $lineItems = is_array($raw['line_items'] ?? null) ? $raw['line_items'] : [];
+
+        return array_values(array_filter(array_map(function (mixed $line): ?array {
+            if (! is_array($line)) {
+                return null;
+            }
+
+            $sellerSku = trim((string) ($line['seller_sku'] ?? ''));
+            $tiktokSkuId = trim((string) ($line['sku_id'] ?? $line['id'] ?? $line['tiktok_sku_id'] ?? ''));
+            $matchedSku = $sellerSku === '' ? null : $this->skus->where('sku_code', $sellerSku)->first();
+
+            return [
+                'seller_sku'       => $sellerSku !== '' ? $sellerSku : null,
+                'tiktok_sku_id'    => $tiktokSkuId !== '' ? $tiktokSkuId : null,
+                'sku_name'         => $this->emptyToNull($line['sku_name'] ?? null),
+                'product_name'     => $this->emptyToNull($line['product_name'] ?? null),
+                'quantity'         => max(1, (int) ($line['quantity'] ?? 1)),
+                'sale_price'       => (float) ($line['sale_price'] ?? 0),
+                'original_price'   => (float) ($line['original_price'] ?? 0),
+                'matched_sku_id'   => $matchedSku['id'] ?? null,
+                'matched_sku_code' => $matchedSku['sku_code'] ?? null,
+            ];
+        }, $lineItems)));
+    }
+
+    private function emptyToNull(mixed $value): ?string
+    {
+        $value = trim((string) ($value ?? ''));
+
+        return $value === '' ? null : $value;
     }
 }
